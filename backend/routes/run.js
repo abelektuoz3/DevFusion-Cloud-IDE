@@ -3,13 +3,13 @@ const router = express.Router();
 const axios = require("axios");
 const auth = require("../middleware/auth");
 
-// Language mapping to Piston language names (from /runtimes)
+// Language mapping to Piston language names (from /packages folder)
 const LANGUAGE_MAP = {
-  javascript: "javascript",
+  javascript: "node", // ← Changed from "javascript" to "node"
   python: "python",
   java: "java",
-  cpp: "c++",
-  csharp: "csharp.net", // C# runtime
+  cpp: "gcc", // ← Changed from "c++" to "gcc"
+  csharp: "dotnet", // ← Changed from "csharp.net" to "dotnet"
 };
 
 // @desc    Execute code using Piston
@@ -40,29 +40,23 @@ router.post("/", auth, async (req, res) => {
       version: "*",
       files: [{ content: code }],
       stdin: stdin || "",
-      // ❌ DO NOT add compile_timeout or run_timeout - they exceed the limit
     };
 
-    const response = await axios.post(
-      "http://localhost:2000/api/v2/execute",
-      payload,
-      {
-        timeout: 30000, // 30 seconds for the entire request
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    // Use environment variable for Piston URL
+    const PISTON_URL = process.env.PISTON_URL || "http://localhost:2000";
+
+    const response = await axios.post(`${PISTON_URL}/api/v2/execute`, payload, {
+      timeout: 30000,
+      headers: { "Content-Type": "application/json" },
+    });
 
     const result = response.data.run;
 
-    // For C#, output might be in stdout or stderr
     let outputText = result.stdout || result.output || "";
-
-    // If stdout is empty but stderr has content, use stderr (some .NET apps output to stderr)
     if (!outputText && result.stderr) {
       outputText = result.stderr;
     }
 
-    // Clean up the output
     outputText = outputText.trim();
 
     res.json({
@@ -83,10 +77,9 @@ router.post("/", auth, async (req, res) => {
     }
 
     if (error.response) {
-      // Check if it's a timeout from Piston
       if (error.response.data?.message?.includes("Time limit exceeded")) {
         return res.status(504).json({
-          error: "C# compilation timed out. Try again or use simpler code.",
+          error: "Compilation timed out. Try again or use simpler code.",
         });
       }
       return res.status(error.response.status || 500).json({
