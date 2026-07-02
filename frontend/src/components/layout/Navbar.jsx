@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FiCode, FiMenu, FiX, FiLogOut } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
+import DarkModeToggle from "../ui/DarkModeToggle";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,9 +36,9 @@ const Navbar = () => {
   return (
     <nav
       className={`fixed w-full z-50 transition-all duration-500 ${
-        scrolled ?
-          "bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-100"
-        : "bg-transparent"
+        scrolled
+          ? "bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-lg border-b border-gray-100 dark:border-slate-700"
+          : "bg-transparent"
       }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
@@ -53,33 +54,34 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-1">
             <button
               onClick={() => scrollToSection("features")}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition">
+              className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition">
               Features
             </button>
             <button
               onClick={() => scrollToSection("how-it-works")}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition">
+              className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition">
               How It Works
             </button>
 
-            {user ?
+            {user ? (
               <>
                 <Link
                   to="/dashboard"
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition">
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition">
                   Dashboard
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center space-x-1.5 px-4 py-2 rounded-lg text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition">
+                  className="flex items-center space-x-1.5 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 transition">
                   <FiLogOut size={16} />
                   <span>Logout</span>
                 </button>
               </>
-            : <>
+            ) : (
+              <>
                 <Link
                   to="/login"
-                  className="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition">
+                  className="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition">
                   Login
                 </Link>
                 <Link
@@ -88,50 +90,54 @@ const Navbar = () => {
                   Get Started
                 </Link>
               </>
-            }
+            )}
+
+            <DarkModeToggle />
           </div>
 
-          <button
-            className="md:hidden p-2 rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition"
-            onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ?
-              <FiX size={24} />
-            : <FiMenu size={24} />}
-          </button>
+          <div className="md:hidden flex items-center space-x-2">
+            <DarkModeToggle />
+            <button
+              className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition"
+              onClick={() => setIsOpen(!isOpen)}>
+              {isOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+            </button>
+          </div>
         </div>
       </div>
 
       {isOpen && (
-        <div className="md:hidden bg-white/95 backdrop-blur-xl border-b border-gray-100">
+        <div className="md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-gray-100 dark:border-slate-700">
           <div className="px-4 py-6 space-y-4">
             <button
               onClick={() => scrollToSection("features")}
-              className="block w-full text-left px-4 py-3 rounded-xl text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition font-medium">
+              className="block w-full text-left px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition font-medium">
               Features
             </button>
             <button
               onClick={() => scrollToSection("how-it-works")}
-              className="block w-full text-left px-4 py-3 rounded-xl text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition font-medium">
+              className="block w-full text-left px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition font-medium">
               How It Works
             </button>
-            {user ?
+            {user ? (
               <>
                 <Link
                   to="/dashboard"
-                  className="block px-4 py-3 rounded-xl text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition font-medium"
+                  className="block px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition font-medium"
                   onClick={() => setIsOpen(false)}>
                   Dashboard
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="block w-full text-left px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition font-medium">
+                  className="block w-full text-left px-4 py-3 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition font-medium">
                   Logout
                 </button>
               </>
-            : <>
+            ) : (
+              <>
                 <Link
                   to="/login"
-                  className="block px-4 py-3 rounded-xl text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 transition font-medium"
+                  className="block px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition font-medium"
                   onClick={() => setIsOpen(false)}>
                   Login
                 </Link>
@@ -142,7 +148,7 @@ const Navbar = () => {
                   Get Started Free
                 </Link>
               </>
-            }
+            )}
           </div>
         </div>
       )}

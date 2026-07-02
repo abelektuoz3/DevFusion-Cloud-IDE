@@ -13,11 +13,14 @@ import {
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
+import DarkModeToggle from "../components/ui/DarkModeToggle";
+import { useTheme } from "../context/ThemeContext";
 
 const EditorPage = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { api } = useAuth();
+  const { isDark } = useTheme();
 
   const [code, setCode] = useState("// Write your code here");
   const [language, setLanguage] = useState("javascript");
@@ -156,24 +159,24 @@ const EditorPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900 transition-colors duration-300">
         <div className="flex flex-col items-center space-y-4">
           <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
-          <p className="text-gray-500">Loading project...</p>
+          <p className="text-gray-500 dark:text-gray-400">Loading project...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white dark:bg-slate-900 flex flex-col transition-colors duration-300">
       {/* Toolbar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex flex-wrap items-center gap-3 sticky top-0 z-10 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-4 py-3 flex flex-wrap items-center gap-3 sticky top-0 z-10 shadow-sm dark:shadow-slate-900/50">
         <button
           onClick={() => navigate("/dashboard")}
-          className="p-2 hover:bg-gray-100 rounded-lg transition"
+          className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition"
           title="Back to Dashboard">
-          <FiArrowLeft size={20} className="text-gray-600" />
+          <FiArrowLeft size={20} className="text-gray-600 dark:text-gray-400" />
         </button>
 
         <span className="text-xl">{getLanguageIcon()}</span>
@@ -182,14 +185,14 @@ const EditorPage = () => {
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="flex-1 min-w-[150px] px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+          className="flex-1 min-w-[150px] px-3 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
           placeholder="Project Title"
         />
 
         <select
           value={language}
           onChange={handleLanguageChange}
-          className="px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white">
+          className="px-3 py-1.5 border border-gray-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white">
           <option value="javascript">JavaScript ✅</option>
           <option value="python">Python ✅</option>
           <option value="java">Java ✅</option>
@@ -198,10 +201,11 @@ const EditorPage = () => {
         </select>
 
         <div className="flex items-center space-x-2 ml-auto">
+          <DarkModeToggle />
           {projectId && (
             <button
               onClick={handleDelete}
-              className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+              className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
               title="Delete Project">
               <FiTrash2 size={18} />
             </button>
@@ -234,7 +238,7 @@ const EditorPage = () => {
       </div>
 
       {/* Language Status Bar */}
-      <div className="bg-gray-50 px-4 py-1.5 border-b border-gray-200 text-xs text-gray-500 flex items-center justify-between">
+      <div className="bg-gray-50 dark:bg-slate-800 px-4 py-1.5 border-b border-gray-200 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-400 flex items-center justify-between">
         <span>{getStatusMessage()}</span>
         <span>
           {executionStatus === "success" && "✅ Last run: Success"}
@@ -246,13 +250,13 @@ const EditorPage = () => {
       {/* Editor and Output */}
       <div className="flex-1 flex flex-col lg:flex-row min-h-0">
         {/* Editor */}
-        <div className="flex-1 h-[50vh] lg:h-auto border-r border-gray-200">
+        <div className="flex-1 h-[50vh] lg:h-auto border-r border-gray-200 dark:border-slate-700">
           <Editor
             height="100%"
             language={language}
             value={code}
             onChange={(value) => setCode(value || "")}
-            theme="vs-light"
+            theme={isDark ? "vs-dark" : "vs-light"}
             options={{
               minimap: { enabled: false },
               fontSize: 14,
@@ -276,13 +280,13 @@ const EditorPage = () => {
         </div>
 
         {/* Output Console */}
-        <div className="lg:w-1/3 h-[50vh] lg:h-auto bg-gray-50 border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col">
-          <div className="bg-white px-4 py-2 border-b border-gray-200 flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">
+        <div className="lg:w-1/3 h-[50vh] lg:h-auto bg-gray-50 dark:bg-slate-800 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-slate-700 flex flex-col">
+          <div className="bg-white dark:bg-slate-900 px-4 py-2 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Output Console
             </span>
             <div className="flex items-center space-x-2">
-              <span className="text-xs text-gray-400">{language}</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">{language}</span>
               {executionStatus === "success" && (
                 <FiCheckCircle className="text-green-500" size={16} />
               )}

@@ -1,20 +1,17 @@
-import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { Toaster } from "react-hot-toast";
-import { AuthProvider, useAuth } from "./context/AuthContext";
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import Editor from "./pages/Editor";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import VerifyOTP from './pages/VerifyOTP'; // ← Import this
+import Dashboard from './pages/Dashboard';
+import Editor from './pages/Editor';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50/30">
@@ -25,9 +22,15 @@ const ProtectedRoute = ({ children }) => {
       </div>
     );
   }
+  
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+  
+  if (!user.isVerified) {
+    return <Navigate to="/verify-otp" replace />;
+  }
+  
   return children;
 };
 
@@ -39,18 +42,18 @@ function App() {
           position="top-right"
           toastOptions={{
             style: {
-              background: "#fff",
-              color: "#1a1a1a",
-              border: "1px solid #e5e7eb",
-              borderRadius: "12px",
-              padding: "16px",
-              boxShadow: "0 20px 40px rgba(0,0,0,0.08)",
+              background: '#fff',
+              color: '#1a1a1a',
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: '16px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
             },
             success: {
-              iconTheme: { primary: "#6366f1", secondary: "#fff" },
+              iconTheme: { primary: '#6366f1', secondary: '#fff' },
             },
             error: {
-              iconTheme: { primary: "#ef4444", secondary: "#fff" },
+              iconTheme: { primary: '#ef4444', secondary: '#fff' },
             },
           }}
         />
@@ -58,6 +61,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verify-otp" element={<VerifyOTP />} /> {/* ← Add this */}
           <Route
             path="/dashboard"
             element={

@@ -65,7 +65,7 @@ const HowItWorks = () => {
   };
 
   return (
-    <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white" id="how-it-works">
+    <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white dark:bg-slate-900" id="how-it-works">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <motion.div
@@ -73,14 +73,14 @@ const HowItWorks = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}>
-            <span className="inline-block px-4 py-2 rounded-full bg-purple-50 text-purple-600 text-sm font-semibold tracking-wider uppercase border border-purple-100 mb-4">
+            <span className="inline-block px-4 py-2 rounded-full bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 text-sm font-semibold tracking-wider uppercase border border-purple-100 dark:border-purple-700 mb-4">
               How It Works
             </span>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
               Get Started in
               <span className="gradient-text"> Three Simple Steps</span>
             </h2>
-            <p className="text-xl text-gray-500 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
               From writing code to sharing it with the world - it's that easy.
             </p>
           </motion.div>
@@ -88,7 +88,7 @@ const HowItWorks = () => {
 
         <div className="relative">
           {/* Connecting Line */}
-          <div className="hidden lg:block absolute top-1/2 left-[16.6%] right-[16.6%] h-0.5 bg-gradient-to-r from-indigo-200 via-purple-200 to-pink-200 transform -translate-y-1/2" />
+          <div className="hidden lg:block absolute top-1/2 left-[16.6%] right-[16.6%] h-0.5 bg-gradient-to-r from-indigo-200 via-purple-200 to-pink-200 dark:from-indigo-700 dark:via-purple-700 dark:to-pink-700 transform -translate-y-1/2" />
 
           <motion.div
             ref={ref}
@@ -102,11 +102,11 @@ const HowItWorks = () => {
                 variants={itemVariants}
                 className="relative">
                 {/* Step Number Background */}
-                <div className="absolute -top-4 -right-4 text-7xl font-black text-gray-100/50 select-none">
+                <div className="absolute -top-4 -right-4 text-7xl font-black text-gray-100/50 dark:text-white/5 select-none">
                   {step.number}
                 </div>
 
-                <div className="relative bg-white rounded-3xl p-8 shadow-lg shadow-gray-200/50 border border-gray-100 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 group">
+                <div className="relative bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-lg shadow-gray-200/50 dark:shadow-black/20 border border-gray-100 dark:border-slate-700 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 group">
                   {/* Icon */}
                   <div
                     className={`w-20 h-20 rounded-2xl bg-gradient-to-r ${step.gradient} flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-${step.color}-500/25`}>
@@ -114,13 +114,13 @@ const HowItWorks = () => {
                   </div>
 
                   {/* Content */}
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                     {step.title}
                   </h3>
-                  <p className="text-gray-500 leading-relaxed">{step.desc}</p>
+                  <p className="text-gray-500 dark:text-gray-400 leading-relaxed">{step.desc}</p>
 
                   {/* Step Indicator */}
-                  <div className="mt-6 flex items-center text-sm font-medium text-gray-400">
+                  <div className="mt-6 flex items-center text-sm font-medium text-gray-400 dark:text-gray-500">
                     <span className="flex items-center">
                       Step {index + 1} of 3
                       <svg
@@ -150,11 +150,11 @@ const HowItWorks = () => {
           transition={{ duration: 0.6, delay: 0.3 }}
           viewport={{ once: true }}
           className="mt-16 text-center">
-          <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-3xl p-12 border border-indigo-100/50">
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+          <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950/50 dark:via-purple-950/50 dark:to-pink-950/50 rounded-3xl p-12 border border-indigo-100/50 dark:border-indigo-800/50">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
               Ready to start coding?
             </h3>
-            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-2xl mx-auto">
               Join thousands of developers who use DevFusion Cloud IDE every
               day.
             </p>

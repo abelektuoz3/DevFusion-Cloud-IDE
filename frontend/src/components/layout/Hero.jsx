@@ -45,15 +45,15 @@ const Hero = () => {
   ];
 
   return (
-    <section className="min-h-screen flex items-center relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 pt-20">
+    <section className="min-h-screen flex items-center relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/30 pt-20">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-200/20 rounded-full blur-3xl animate-float" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-200/20 dark:bg-indigo-500/10 rounded-full blur-3xl animate-float" />
         <div
-          className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200/20 rounded-full blur-3xl animate-float"
+          className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200/20 dark:bg-purple-500/10 rounded-full blur-3xl animate-float"
           style={{ animationDelay: "2s" }}
         />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-100/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-100/10 dark:bg-indigo-500/5 rounded-full blur-3xl" />
       </div>
 
       {/* Floating Icons */}
@@ -92,9 +92,9 @@ const Hero = () => {
           {/* Badge */}
           <motion.div
             variants={itemVariants}
-            className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-indigo-50 border border-indigo-100 mb-8">
+            className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-100 dark:border-indigo-700 mb-8">
             <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-            <span className="text-sm font-medium text-indigo-700">
+            <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
               🚀 10K+ developers trust DevFusion
             </span>
           </motion.div>
@@ -103,7 +103,7 @@ const Hero = () => {
           <motion.h1
             variants={itemVariants}
             className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold leading-[1.1] tracking-tight">
-            <span className="text-gray-900">Code in the</span>
+            <span className="text-gray-900 dark:text-white">Code in the</span>
             <br />
             <span className="gradient-text">Cloud IDE</span>
           </motion.h1>
@@ -111,9 +111,9 @@ const Hero = () => {
           {/* Description */}
           <motion.p
             variants={itemVariants}
-            className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            className="mt-6 text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed">
             Write, run, and share code instantly with a powerful,
-            <span className="font-semibold text-gray-900">
+            <span className="font-semibold text-gray-900 dark:text-white">
               {" "}
               zero-setup
             </span>{" "}
@@ -150,7 +150,7 @@ const Hero = () => {
                 href="https://github.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-gray-700 bg-white border-2 border-gray-200 rounded-2xl hover:border-indigo-300 hover:shadow-xl transition-all duration-300">
+                className="group inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-600 rounded-2xl hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-xl transition-all duration-300">
                 <FiGithub className="mr-3 group-hover:rotate-12 transition-transform duration-300" />
                 View on GitHub
               </a>
@@ -181,12 +181,12 @@ const Hero = () => {
               <motion.div
                 key={index}
                 whileHover={{ y: -5 }}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-100 shadow-lg shadow-gray-200/50">
+                className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-100 dark:border-slate-700 shadow-lg shadow-gray-200/50 dark:shadow-black/20">
                 <div
                   className={`text-3xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
                   {stat.value}
                 </div>
-                <div className="text-sm text-gray-500 mt-1 font-medium">
+                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">
                   {stat.label}
                 </div>
               </motion.div>
@@ -197,7 +197,7 @@ const Hero = () => {
           <motion.div
             variants={itemVariants}
             className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400">
-            <span className="font-medium text-gray-500">
+            <span className="font-medium text-gray-500 dark:text-gray-400">
               Trusted by teams at
             </span>
             <div className="flex items-center gap-8">
@@ -205,7 +205,7 @@ const Hero = () => {
                 (company, index) => (
                   <span
                     key={index}
-                    className="font-semibold text-gray-300 hover:text-gray-600 transition-colors">
+                    className="font-semibold text-gray-300 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                     {company}
                   </span>
                 ),

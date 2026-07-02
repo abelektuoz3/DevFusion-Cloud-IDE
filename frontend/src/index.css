@@ -20,6 +20,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: #ffffff;
   color: #1a1a1a;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark mode body */
+html.dark body {
+  background: #0f172a;
+  color: #f1f5f9;
 }
 
 /* Custom Scrollbar */
@@ -30,6 +37,10 @@ body {
 
 ::-webkit-scrollbar-track {
   background: #f1f1f1;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
 }
 
 ::-webkit-scrollbar-thumb {

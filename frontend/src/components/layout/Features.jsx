@@ -17,56 +17,56 @@ const features = [
     title: "Multi-Language Support",
     desc: "JavaScript, Python, Java, C++, C#, and more. Write in your preferred language.",
     color: "from-indigo-500 to-blue-500",
-    bg: "bg-indigo-50",
+    bg: "bg-indigo-50 dark:bg-indigo-900/30",
   },
   {
     icon: FiZap,
     title: "Instant Execution",
     desc: "Run code and see results in real-time with our lightning-fast execution engine.",
     color: "from-yellow-500 to-orange-500",
-    bg: "bg-yellow-50",
+    bg: "bg-yellow-50 dark:bg-yellow-900/20",
   },
   {
     icon: FiEdit,
     title: "Smart Code Editor",
     desc: "Syntax highlighting, auto-completion, error detection, and intelligent suggestions.",
     color: "from-green-500 to-emerald-500",
-    bg: "bg-green-50",
+    bg: "bg-green-50 dark:bg-green-900/20",
   },
   {
     icon: FiCloud,
     title: "Cloud Storage",
     desc: "Save and access your projects from anywhere, anytime with automatic backups.",
     color: "from-cyan-500 to-blue-500",
-    bg: "bg-cyan-50",
+    bg: "bg-cyan-50 dark:bg-cyan-900/20",
   },
   {
     icon: FiUsers,
     title: "Team Collaboration",
     desc: "Work together in real-time with team members. Share and review code instantly.",
     color: "from-purple-500 to-pink-500",
-    bg: "bg-purple-50",
+    bg: "bg-purple-50 dark:bg-purple-900/20",
   },
   {
     icon: FiShield,
     title: "Enterprise Security",
     desc: "JWT authentication, encrypted data, and enterprise-grade security measures.",
     color: "from-red-500 to-rose-500",
-    bg: "bg-red-50",
+    bg: "bg-red-50 dark:bg-red-900/20",
   },
   {
     icon: FiCpu,
     title: "AI-Powered Assistance",
     desc: "Smart code completions, debugging help, and intelligent suggestions.",
     color: "from-violet-500 to-purple-500",
-    bg: "bg-violet-50",
+    bg: "bg-violet-50 dark:bg-violet-900/20",
   },
   {
     icon: FiLayers,
     title: "Project Management",
     desc: "Organize your projects with folders, tags, and powerful search capabilities.",
     color: "from-teal-500 to-cyan-500",
-    bg: "bg-teal-50",
+    bg: "bg-teal-50 dark:bg-teal-900/20",
   },
 ];
 
@@ -107,7 +107,7 @@ const Features = () => {
   };
 
   return (
-    <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-50/50" id="features">
+    <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-50/50 dark:bg-slate-900/50" id="features">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <motion.div
@@ -115,14 +115,14 @@ const Features = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}>
-            <span className="inline-block px-4 py-2 rounded-full bg-indigo-50 text-indigo-600 text-sm font-semibold tracking-wider uppercase border border-indigo-100 mb-4">
+            <span className="inline-block px-4 py-2 rounded-full bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-sm font-semibold tracking-wider uppercase border border-indigo-100 dark:border-indigo-700 mb-4">
               Features
             </span>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
               Everything You Need to
               <span className="gradient-text"> Code Smarter</span>
             </h2>
-            <p className="text-xl text-gray-500 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
               Powerful features designed to make your coding experience seamless
               and productive.
             </p>
@@ -143,7 +143,7 @@ const Features = () => {
                 y: -8,
                 transition: { type: "spring", stiffness: 300 },
               }}
-              className="group relative bg-white rounded-2xl p-8 shadow-lg shadow-gray-200/50 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-500 border border-gray-100">
+              className="group relative bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-lg shadow-gray-200/50 dark:shadow-black/20 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-500 border border-gray-100 dark:border-slate-700">
               {/* Gradient Border on Hover */}
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10 blur-xl" />
 
@@ -157,15 +157,15 @@ const Features = () => {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-lg font-bold text-gray-900 mb-3">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">
                   {feature.title}
                 </h3>
 
                 {/* Description */}
-                <p className="text-gray-500 leading-relaxed">{feature.desc}</p>
+                <p className="text-gray-500 dark:text-gray-400 leading-relaxed">{feature.desc}</p>
 
                 {/* Learn More Link */}
-                <div className="mt-4 flex items-center text-sm font-medium text-indigo-600 group-hover:text-indigo-700 transition-colors">
+                <div className="mt-4 flex items-center text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">
                   <span>Learn more</span>
                   <svg
                     className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-300"
