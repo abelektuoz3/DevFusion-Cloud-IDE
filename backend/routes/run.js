@@ -3,13 +3,13 @@ const router = express.Router();
 const axios = require("axios");
 const auth = require("../middleware/auth");
 
-// Language mapping to Piston language names (from /packages folder)
+// Language mapping to Piston language names
 const LANGUAGE_MAP = {
-  javascript: "node", // ← Changed from "javascript" to "node"
+  javascript: "node",
   python: "python",
   java: "java",
-  cpp: "gcc", // ← Changed from "c++" to "gcc"
-  csharp: "dotnet", // ← Changed from "csharp.net" to "dotnet"
+  cpp: "gcc",
+  csharp: "dotnet",
 };
 
 // @desc    Execute code using Piston
@@ -35,6 +35,9 @@ router.post("/", auth, async (req, res) => {
 
     const pistonLanguage = LANGUAGE_MAP[language];
 
+    // Get Piston URL from environment or use default
+    const PISTON_URL = process.env.PISTON_URL || "http://localhost:2000";
+
     const payload = {
       language: pistonLanguage,
       version: "*",
@@ -42,13 +45,28 @@ router.post("/", auth, async (req, res) => {
       stdin: stdin || "",
     };
 
-    // Use environment variable for Piston URL
-    const PISTON_URL = process.env.PISTON_URL || "http://localhost:2000";
-
-    const response = await axios.post(`${PISTON_URL}/api/v2/execute`, payload, {
-      timeout: 30000,
-      headers: { "Content-Type": "application/json" },
-    });
+    // Try Piston first
+    let response;
+    try {
+      response = await axios.post(
+        `${PISTON_URL}/api/v2/execute`,
+        payload,
+        {
+          timeout: 30000,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    } catch (pistonError) {
+      console.log("⚠️ Piston unavailable, using fallback:", pistonError.message);
+      
+      // If Piston fails, return a user-friendly message
+      return res.status(503).json({
+        output: "",
+        error: "Code execution service is currently unavailable. Please try again later.",
+        details: "The execution engine is not responding. This is a temporary issue.",
+        success: false,
+      });
+    }
 
     const result = response.data.run;
 
@@ -77,11 +95,6 @@ router.post("/", auth, async (req, res) => {
     }
 
     if (error.response) {
-      if (error.response.data?.message?.includes("Time limit exceeded")) {
-        return res.status(504).json({
-          error: "Compilation timed out. Try again or use simpler code.",
-        });
-      }
       return res.status(error.response.status || 500).json({
         error: error.response.data?.message || "Execution service error",
         details: error.response.data,
