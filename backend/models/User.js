@@ -20,10 +20,33 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    // ✅ ADD THESE OTP FIELDS
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    otp: {
+      code: {
+        type: String,
+        default: null,
+      },
+      expiresAt: {
+        type: Date,
+        default: null,
+      },
+    },
+    otpAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lastOtpRequest: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 // Hash password before saving
@@ -46,10 +69,13 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Remove password from JSON
+// Remove password and OTP data from JSON
 userSchema.methods.toJSON = function () {
   const user = this.toObject();
   delete user.password;
+  delete user.otp;
+  delete user.otpAttempts;
+  delete user.lastOtpRequest;
   return user;
 };
 
