@@ -4,7 +4,18 @@ import toast from "react-hot-toast";
 
 const AuthContext = createContext();
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const getSanitizedApiUrl = () => {
+  let url = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  url = url.trim();
+  if (url.startsWith("VITE_API_URL=")) {
+    url = url.substring("VITE_API_URL=".length).trim();
+  }
+  // Strip any wrapping quotes (single or double)
+  url = url.replace(/^['"]|['"]$/g, "");
+  return url;
+};
+
+const API_URL = getSanitizedApiUrl();
 
 // Create axios instance with default config
 const api = axios.create({
