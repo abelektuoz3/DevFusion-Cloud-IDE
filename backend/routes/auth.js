@@ -23,6 +23,8 @@ const loginValidation = [
 
 // Routes
 router.post("/register", registerValidation, authController.register);
+router.post("/verify-otp", authController.verifyOTP);  // ← ADD THIS
+router.post("/resend-otp", authController.resendOTP);  // ← ADD THIS
 router.post("/login", loginValidation, authController.login);
 router.get("/me", auth, authController.getCurrentUser);
 router.post("/logout", auth, authController.logout);
