@@ -32,6 +32,9 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem("token"));
+  const [pendingEmail, setPendingEmail] = useState(
+    localStorage.getItem("pendingEmail") || ""
+  );
 
   // Set token on login/register
   const setAuthToken = (token) => {
@@ -41,6 +44,17 @@ export const AuthProvider = ({ children }) => {
     } else {
       localStorage.removeItem("token");
       setToken(null);
+    }
+  };
+
+  // Set pending email for verification persistence
+  const setPendingEmailPersist = (email) => {
+    if (email) {
+      localStorage.setItem("pendingEmail", email);
+      setPendingEmail(email);
+    } else {
+      localStorage.removeItem("pendingEmail");
+      setPendingEmail("");
     }
   };
 
@@ -77,6 +91,12 @@ export const AuthProvider = ({ children }) => {
 
       setAuthToken(token);
       setUser(user);
+      
+      if (user && !user.isVerified) {
+        setPendingEmailPersist(email);
+      } else {
+        setPendingEmailPersist("");
+      }
 
       toast.success("Welcome back! 🎉");
       return { success: true };
@@ -98,6 +118,7 @@ export const AuthProvider = ({ children }) => {
 
       setAuthToken(token);
       setUser(user);
+      setPendingEmailPersist(email);
 
       toast.success("Account created! 🚀");
       return { success: true };
@@ -108,15 +129,57 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const verifyOTP = async (email, otp) => {
+    try {
+      const response = await api.post("/auth/verify-otp", { email, otp });
+      const { token, user } = response.data;
+
+      setAuthToken(token);
+      setUser(user);
+      setPendingEmailPersist("");
+
+      toast.success("Email verified successfully! 🎉");
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.error || "OTP verification failed";
+      toast.error(message);
+      return { success: false, error: message };
+    }
+  };
+
+  const resendOTP = async (email) => {
+    try {
+      const response = await api.post("/auth/resend-otp", { email });
+      toast.success("Verification code resent! ✉️");
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.error || "Failed to resend OTP";
+      toast.error(message);
+      return { success: false, error: message };
+    }
+  };
+
   const logout = () => {
     setAuthToken(null);
     setUser(null);
+    setPendingEmailPersist("");
     toast.success("Logged out");
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, login, register, logout, loading, api }}>
+      value={{
+        user,
+        login,
+        register,
+        logout,
+        loading,
+        api,
+        verifyOTP,
+        resendOTP,
+        pendingEmail,
+        setPendingEmail: setPendingEmailPersist
+      }}>
       {children}
     </AuthContext.Provider>
   );

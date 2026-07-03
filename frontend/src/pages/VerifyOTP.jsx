@@ -109,18 +109,18 @@ const VerifyOTP = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 flex items-center justify-center px-4">
-      <div className="bg-white p-8 rounded-2xl w-full max-w-md border border-gray-200 shadow-xl shadow-indigo-500/5">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/30 flex items-center justify-center px-4 transition-colors duration-300">
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl w-full max-w-md border border-gray-200 dark:border-slate-700 shadow-xl dark:shadow-black/30 transition-colors duration-300">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-100">
-            <FiMail className="text-3xl text-indigo-600" />
+          <div className="w-16 h-16 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/40 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-100 dark:border-indigo-900/60">
+            <FiMail className="text-3xl text-indigo-600 dark:text-indigo-400" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Verify Your Email</h2>
-          <p className="text-gray-500 mt-2 text-sm">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Verify Your Email</h2>
+          <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">
             We sent a 6-digit code to
           </p>
-          <p className="text-gray-700 font-medium text-sm mt-1 break-all">
+          <p className="text-gray-700 dark:text-gray-300 font-medium text-sm mt-1 break-all">
             {email}
           </p>
         </div>
@@ -128,7 +128,7 @@ const VerifyOTP = () => {
         {/* OTP Input */}
         <form onSubmit={handleVerify}>
           <div className="mb-6">
-            <label className="text-gray-700 text-sm font-medium block mb-4 text-center">
+            <label className="text-gray-700 dark:text-gray-300 text-sm font-medium block mb-4 text-center">
               Enter Verification Code
             </label>
             <div className="flex justify-center gap-2" onPaste={handlePaste}>
@@ -144,21 +144,21 @@ const VerifyOTP = () => {
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   className={`w-12 h-14 text-center text-2xl font-bold border rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 ${
                     digit
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                      : 'border-gray-200 bg-white text-gray-900'
-                  } focus:border-indigo-500 focus:ring-indigo-200`}
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                      : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
+                  } focus:border-indigo-500 focus:ring-indigo-200 dark:focus:ring-indigo-500/30`}
                   autoFocus={index === 0}
                 />
               ))}
             </div>
-            <p className="text-xs text-gray-400 mt-3 text-center">
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-3 text-center">
               Enter the 6-digit code sent to your email
             </p>
           </div>
 
           {/* Error/Success Messages */}
           {user?.isVerified === false && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-sm flex items-center gap-2">
+            <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-900/50 text-yellow-700 dark:text-yellow-400 text-sm flex items-center gap-2 rounded-lg">
               <FiClock className="text-yellow-500" />
               <span>Please verify your email to continue</span>
             </div>
@@ -186,15 +186,15 @@ const VerifyOTP = () => {
 
         {/* Resend Section */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Didn't receive the code?{' '}
             <button
               onClick={handleResend}
               disabled={resendLoading || !canResend}
               className={`font-medium transition ${
                 resendLoading || !canResend
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-indigo-600 hover:text-indigo-700 hover:underline'
+                  ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                  : 'text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:underline'
               }`}
             >
               {resendLoading ? (
@@ -215,7 +215,7 @@ const VerifyOTP = () => {
         <div className="mt-4 text-center">
           <Link
             to="/login"
-            className="text-sm text-gray-500 hover:text-gray-700 transition flex items-center justify-center gap-1 group"
+            className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition flex items-center justify-center gap-1 group"
           >
             <FiArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
             Back to Login
@@ -223,8 +223,8 @@ const VerifyOTP = () => {
         </div>
 
         {/* Help Text */}
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
-          <p className="text-xs text-gray-400 text-center leading-relaxed">
+        <div className="mt-6 p-4 bg-gray-50 dark:bg-slate-900/50 rounded-lg border border-gray-100 dark:border-slate-800">
+          <p className="text-xs text-gray-400 dark:text-gray-500 text-center leading-relaxed">
             💡 Check your spam folder if you don't see the email within 2 minutes.
             <br />
             The OTP expires in 10 minutes.
