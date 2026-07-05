@@ -1,11 +1,13 @@
+// frontend/src/context/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 
 const AuthContext = createContext();
 
+// ✅ Use the same API_URL format as api.js
 const getSanitizedApiUrl = () => {
-  let url = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  let url = import.meta.env.VITE_API_URL || "http://localhost:5000";
   url = url.trim();
   if (url.startsWith("VITE_API_URL=")) {
     url = url.substring("VITE_API_URL=".length).trim();
@@ -17,12 +19,13 @@ const getSanitizedApiUrl = () => {
 
 const API_URL = getSanitizedApiUrl();
 
-// Create axios instance with default config
+// ✅ Create axios instance with /api in the baseURL
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: `${API_URL}/api`, // ← This adds /api to all requests
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 // Add token to all requests if it exists
