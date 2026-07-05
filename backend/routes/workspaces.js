@@ -4,6 +4,12 @@ const router = express.Router();
 const { protect } = require("../middleware/auth");
 const workspaceController = require("../controllers/workspaceController");
 
+// Debug middleware to log all requests to this router
+router.use((req, res, next) => {
+  console.log(`📝 Workspace route hit: ${req.method} ${req.path}`);
+  next();
+});
+
 // @route   POST /api/workspaces
 // @desc    Create a workspace
 // @access  Private

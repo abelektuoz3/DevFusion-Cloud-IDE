@@ -15,7 +15,7 @@ connectDB();
 
 const app = express();
 
-// ✅ Enable trust proxy for Render (Fixes rate-limit X-Forwarded-For error)
+// ✅ Enable trust proxy for Render
 app.set("trust proxy", 1);
 
 // Security middleware
@@ -25,7 +25,7 @@ app.use(
   }),
 );
 
-// ✅ Updated Rate limiting - removed trustProxy option
+// Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -38,7 +38,7 @@ app.use("/api", limiter);
 // Compression
 app.use(compression());
 
-// ✅ Updated CORS - Allow multiple origins
+// ✅ Updated CORS
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "https://dev-fusion-cloud-ide.vercel.app",
@@ -51,10 +51,7 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
-
-      // Check if origin is allowed
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
@@ -83,7 +80,7 @@ const searchRoutes = require("./routes/search");
 const projectRoutes = require("./routes/projects");
 const runRoutes = require("./routes/run");
 
-// Routes
+// ✅ Mount routes - ORDER MATTERS! Make sure specific routes come before wildcards
 app.use("/api/auth", authRoutes);
 app.use("/api/workspaces", workspaceRoutes);
 app.use("/api/folders", folderRoutes);
@@ -93,6 +90,25 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/run", runRoutes);
+
+// ✅ Debug: Log all registered routes
+console.log("\n📋 Registered Routes:");
+app._router.stack.forEach((middleware) => {
+  if (middleware.route) {
+    console.log(
+      `  ${Object.keys(middleware.route.methods).join(", ").toUpperCase()} /api${middleware.route.path}`,
+    );
+  }
+  if (middleware.name === "router" && middleware.regexp) {
+    const path = middleware.regexp.source
+      .replace(/\\\//g, "/")
+      .replace(/\^/g, "")
+      .replace(/\?/g, "")
+      .replace(/\(\?:\(\[\^\\\/\]\+\)\)/g, "/:id");
+    console.log(`  Router mounted at: ${path}`);
+  }
+});
+console.log("");
 
 // Health check endpoint
 app.get("/health", (req, res) => {
