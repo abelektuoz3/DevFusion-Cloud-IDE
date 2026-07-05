@@ -8,13 +8,20 @@ const Notification = require("../models/Notification");
 // @route   POST /api/workspaces
 // @access  Private
 exports.createWorkspace = async (req, res) => {
+  console.log("📝 Create workspace called");
+  console.log("📝 Request body:", req.body);
+  console.log("📝 User:", req.user?._id);
+
   try {
     const { name, description, isPublic } = req.body;
 
-    // Validate name is provided
+    // Validate name
     if (!name || name.trim() === "") {
+      console.log("❌ Name validation failed");
       return res.status(400).json({ message: "Workspace name is required" });
     }
+
+    console.log("✅ Creating workspace with name:", name);
 
     // Create workspace
     const workspace = await Workspace.create({
@@ -24,6 +31,8 @@ exports.createWorkspace = async (req, res) => {
       isPublic: isPublic || false,
     });
 
+    console.log("✅ Workspace created:", workspace._id);
+
     // Create root folder
     const rootFolder = await Folder.create({
       name: "root",
@@ -31,6 +40,8 @@ exports.createWorkspace = async (req, res) => {
       parentFolder: null,
       owner: req.user._id,
     });
+
+    console.log("✅ Root folder created:", rootFolder._id);
 
     // Update workspace with root folder
     workspace.rootFolder = rootFolder._id;
@@ -53,8 +64,9 @@ exports.createWorkspace = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Create workspace error:", error);
-    // Send more detailed error
+    console.error("❌ Create workspace error:", error);
+    console.error("❌ Error stack:", error.stack);
+
     if (error.code === 11000) {
       return res
         .status(400)
@@ -98,7 +110,6 @@ exports.getWorkspaceById = async (req, res) => {
       return res.status(404).json({ message: "Workspace not found" });
     }
 
-    // Check access
     const isOwner = workspace.owner._id.toString() === req.user._id.toString();
     const isMember = workspace.members.some(
       (m) => m._id.toString() === req.user._id.toString(),
@@ -108,15 +119,11 @@ exports.getWorkspaceById = async (req, res) => {
       return res.status(403).json({ message: "Access denied" });
     }
 
-    // Get full folder tree
     const folderTree = await getFolderTree(workspace.rootFolder);
-
-    // Get all files
     const files = await File.find({ workspace: workspace._id }).select(
       "name path folder language size updatedAt",
     );
 
-    // Update last accessed
     workspace.lastAccessed = new Date();
     await workspace.save();
 
@@ -143,12 +150,10 @@ exports.updateWorkspace = async (req, res) => {
       return res.status(404).json({ message: "Workspace not found" });
     }
 
-    // Check ownership
     if (workspace.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // Update fields
     if (name) workspace.name = name;
     if (description !== undefined) workspace.description = description;
     if (isPublic !== undefined) workspace.isPublic = isPublic;
@@ -177,18 +182,12 @@ exports.deleteWorkspace = async (req, res) => {
       return res.status(404).json({ message: "Workspace not found" });
     }
 
-    // Check ownership
     if (workspace.owner.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // Delete all files
     await File.deleteMany({ workspace: workspace._id });
-
-    // Delete all folders
     await deleteFolderTree(workspace.rootFolder);
-
-    // Delete workspace
     await workspace.deleteOne();
 
     res.json({ message: "Workspace deleted successfully" });

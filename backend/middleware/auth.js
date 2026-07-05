@@ -1,4 +1,4 @@
-// middleware/auth.js
+// backend/middleware/auth.js
 const { verifyToken } = require("../config/jwt");
 const User = require("../models/User");
 
@@ -14,23 +14,27 @@ const protect = async (req, res, next) => {
     }
 
     if (!token) {
+      console.log("❌ No token provided");
       return res.status(401).json({ message: "Not authorized, no token" });
     }
 
     const decoded = verifyToken(token);
     if (!decoded) {
+      console.log("❌ Invalid token");
       return res.status(401).json({ message: "Not authorized, invalid token" });
     }
 
     const user = await User.findById(decoded.userId).select("-password");
     if (!user) {
+      console.log("❌ User not found");
       return res.status(401).json({ message: "User not found" });
     }
 
+    console.log(`✅ User authenticated: ${user.username} (${user._id})`);
     req.user = user;
     next();
   } catch (error) {
-    console.error("Auth middleware error:", error);
+    console.error("❌ Auth middleware error:", error);
     res.status(401).json({ message: "Not authorized" });
   }
 };
