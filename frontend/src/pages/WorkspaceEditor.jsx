@@ -1,7 +1,7 @@
 // src/pages/WorkspaceEditor.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FiArrowLeft, FiMenu, FiX, FiFolder } from "react-icons/fi";
+import { FiArrowLeft, FiMenu, FiXCircle, FiFolder } from "react-icons/fi";
 import { useWorkspace } from "../context/WorkspaceContext";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -9,7 +9,6 @@ import Explorer from "../components/explorer/Explorer";
 import EditorTabs from "../components/editor/EditorTabs";
 import StatusBar from "../components/editor/StatusBar";
 import SearchOverlay from "../components/search/SearchOverlay";
-import { FiArrowLeft, FiMenu, FiX } from "react-icons/fi";
 
 const WorkspaceEditor = () => {
   const { workspaceId } = useParams();
@@ -136,9 +135,7 @@ const WorkspaceEditor = () => {
             <FiArrowLeft className="text-gray-600 dark:text-gray-400" />
           </button>
           <div className="flex items-center space-x-2">
-            <span className="text-lg">
-              {currentWorkspace.icon || <FiFolder size={20} />}
-            </span>
+            <FiFolder className="text-yellow-500" size={20} />
             <span className="font-medium text-gray-900 dark:text-white">
               {currentWorkspace.name}
             </span>
@@ -154,12 +151,12 @@ const WorkspaceEditor = () => {
             title="Toggle Explorer (Ctrl+B)">
             {isExplorerOpen ?
               <FiMenu className="text-gray-600 dark:text-gray-400" />
-            : <FiX className="text-gray-600 dark:text-gray-400" />}
+            : <FiXCircle className="text-gray-600 dark:text-gray-400" />}
           </button>
           <button
             onClick={() => setIsSearchOpen(true)}
             className="px-3 py-1 text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition">
-            🔍 Search (Ctrl+F)
+            Search (Ctrl+F)
           </button>
         </div>
       </div>
