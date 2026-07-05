@@ -15,7 +15,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import VerifyOTP from "./pages/VerifyOTP";
 import Dashboard from "./pages/Dashboard";
-import Editor from "./pages/EditorTabs";
+import Editor from "./pages/Editor";
 import WorkspaceEditor from "./pages/WorkspaceEditor";
 
 const ProtectedRoute = ({ children }) => {

@@ -2,7 +2,7 @@
 import React from "react";
 import MonacoEditor from "@monaco-editor/react";
 import { useTheme } from "../../context/ThemeContext";
-import { FiX } from "react-icons/fi";
+import { FiXCircle } from "react-icons/fi";
 
 const EditorTabs = ({
   tabs,
@@ -51,7 +51,7 @@ const EditorTabs = ({
                 onCloseTab(tab.id);
               }}
               className="ml-2 p-0.5 hover:bg-gray-200 dark:hover:bg-slate-600 rounded transition opacity-0 group-hover:opacity-100">
-              <FiX size={14} />
+              <FiXCircle size={14} />
             </button>
           </div>
         ))}
