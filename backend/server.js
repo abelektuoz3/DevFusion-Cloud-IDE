@@ -15,7 +15,7 @@ connectDB();
 
 const app = express();
 
-// ✅ Enable trust proxy for Render (Fixes rate-limit error)
+// ✅ Enable trust proxy for Render (Fixes rate-limit X-Forwarded-For error)
 app.set("trust proxy", 1);
 
 // Security middleware
@@ -25,12 +25,11 @@ app.use(
   }),
 );
 
-// ✅ Updated Rate limiting with trust proxy
+// ✅ Updated Rate limiting - removed trustProxy option
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: "Too many requests from this IP, please try again later.",
-  trustProxy: true, // Add this
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -39,13 +38,14 @@ app.use("/api", limiter);
 // Compression
 app.use(compression());
 
-// ✅ Updated CORS - Allow both development and production URLs
+// ✅ Updated CORS - Allow multiple origins
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "https://dev-fusion-cloud-ide.vercel.app",
+  "https://devfusion-cloud-ide.vercel.app",
   "http://localhost:3000",
   "http://localhost:5173",
-  "https://devfusion-cloud-ide.vercel.app",
+  "http://localhost:5000",
 ].filter(Boolean);
 
 app.use(
