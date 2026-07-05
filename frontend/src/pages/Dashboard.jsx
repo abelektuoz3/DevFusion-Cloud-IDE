@@ -12,9 +12,7 @@ import {
   FiCpu,
   FiTerminal,
   FiDatabase,
-  FiZap,
   FiFile,
-  FiGrid,
   FiBox,
 } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
@@ -25,10 +23,13 @@ import toast from "react-hot-toast";
 const Dashboard = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [workspacesLoading, setWorkspacesLoading] = useState(true);
   const { user, logout, api } = useAuth();
-  const { workspaces, loadWorkspaces, createWorkspace, deleteWorkspace } =
-    useWorkspace();
+  const {
+    workspaces = [],
+    loadWorkspaces,
+    createWorkspace,
+    deleteWorkspace,
+  } = useWorkspace();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,7 +40,7 @@ const Dashboard = () => {
   const loadProjects = async () => {
     try {
       const response = await api.get("/projects");
-      setProjects(response.data);
+      setProjects(response.data || []);
     } catch (error) {
       console.error("Load projects error:", error);
       if (error.response?.status === 401) {
@@ -144,6 +145,10 @@ const Dashboard = () => {
     );
   };
 
+  // Safely get projects array
+  const projectsList = Array.isArray(projects) ? projects : [];
+  const workspacesList = Array.isArray(workspaces) ? workspaces : [];
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors duration-300">
       {/* Navbar */}
@@ -158,13 +163,14 @@ const Dashboard = () => {
                 DevFusion IDE
               </h1>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Welcome back, {user?.username}!
+                Welcome back, {user?.username || "User"}!
               </p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
             <span className="text-sm text-gray-600 dark:text-gray-400 hidden md:block">
-              {projects.length} {projects.length === 1 ? "project" : "projects"}
+              {projectsList.length}{" "}
+              {projectsList.length === 1 ? "project" : "projects"}
             </span>
             <DarkModeToggle />
             <button
@@ -203,7 +209,7 @@ const Dashboard = () => {
               Loading your projects...
             </p>
           </div>
-        : projects.length === 0 ?
+        : projectsList.length === 0 ?
           <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-2xl border-2 border-dashed border-gray-200 dark:border-slate-700">
             <div className="w-20 h-20 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center mx-auto mb-4">
               <FiFolder className="text-4xl text-indigo-400" />
@@ -222,7 +228,7 @@ const Dashboard = () => {
             </button>
           </div>
         : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {projects.map((project) => (
+            {projectsList.map((project) => (
               <div
                 key={project._id}
                 className="group bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-600 hover:shadow-xl dark:hover:shadow-indigo-900/20 transition-all duration-300 overflow-hidden">
@@ -297,7 +303,7 @@ const Dashboard = () => {
             </button>
           </div>
 
-          {workspaces.length === 0 ?
+          {workspacesList.length === 0 ?
             <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border-2 border-dashed border-gray-200 dark:border-slate-700">
               <div className="w-20 h-20 rounded-full bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center mx-auto mb-4">
                 <FiFolder className="text-4xl text-purple-400" />
@@ -316,7 +322,7 @@ const Dashboard = () => {
               </button>
             </div>
           : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {workspaces.map((workspace) => (
+              {workspacesList.map((workspace) => (
                 <div
                   key={workspace._id}
                   className="group bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 hover:border-purple-200 dark:hover:border-purple-600 hover:shadow-xl dark:hover:shadow-purple-900/20 transition-all duration-300 overflow-hidden">
@@ -324,9 +330,7 @@ const Dashboard = () => {
                     onClick={() => openWorkspace(workspace._id)}
                     className="p-6 cursor-pointer">
                     <div className="flex items-center space-x-3 mb-3">
-                      <span className="text-3xl">
-                        {workspace.icon || <FiFolder size={28} />}
-                      </span>
+                      <FiFolder className="text-yellow-500" size={24} />
                       <h3 className="font-semibold text-gray-900 dark:text-white truncate">
                         {workspace.name}
                       </h3>
