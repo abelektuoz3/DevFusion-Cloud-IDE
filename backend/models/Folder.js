@@ -1,3 +1,4 @@
+// backend/models/Folder.js
 const mongoose = require("mongoose");
 
 const folderSchema = new mongoose.Schema(
@@ -22,6 +23,7 @@ const folderSchema = new mongoose.Schema(
     path: {
       type: String,
       required: true,
+      default: "", // Add default to prevent validation errors
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
@@ -48,20 +50,37 @@ folderSchema.index(
 );
 folderSchema.index({ path: 1 });
 
-folderSchema.pre("save", async function (next) {
-  if (this.isNew && !this.path) {
+// ✅ Fix: Use function declaration instead of arrow function
+folderSchema.pre("save", function (next) {
+  // Only generate path if it's not already set
+  if (!this.path) {
     if (this.parentFolder) {
-      const parent = await this.constructor.findById(this.parentFolder);
-      if (parent) {
-        this.path = `${parent.path}/${this.name}`;
-      } else {
-        this.path = `/${this.name}`;
-      }
+      // For subfolders, get parent path
+      mongoose
+        .model("Folder")
+        .findById(this.parentFolder)
+        .then((parent) => {
+          if (parent) {
+            this.path = `${parent.path}/${this.name}`;
+          } else {
+            this.path = `/${this.name}`;
+          }
+          next();
+        })
+        .catch((err) => {
+          console.error("Error finding parent folder:", err);
+          // Fallback
+          this.path = `/${this.name}`;
+          next();
+        });
     } else {
+      // Root folder
       this.path = `/${this.name}`;
+      next();
     }
+  } else {
+    next();
   }
-  next();
 });
 
 folderSchema.methods.getFullPath = function () {

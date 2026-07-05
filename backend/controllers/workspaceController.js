@@ -33,14 +33,16 @@ exports.createWorkspace = async (req, res) => {
 
     console.log("✅ Workspace created:", workspace._id);
 
-    // Create root folder
-    const rootFolder = await Folder.create({
+    // ✅ Create root folder with explicit path
+    const rootFolder = new Folder({
       name: "root",
       workspace: workspace._id,
       parentFolder: null,
       owner: req.user._id,
+      path: `/${workspace._id}/root`, // Explicitly set path
     });
 
+    await rootFolder.save();
     console.log("✅ Root folder created:", rootFolder._id);
 
     // Update workspace with root folder
@@ -72,6 +74,13 @@ exports.createWorkspace = async (req, res) => {
         .status(400)
         .json({ message: "Workspace with this name already exists" });
     }
+
+    // Handle validation errors
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((err) => err.message);
+      return res.status(400).json({ message: errors.join(", ") });
+    }
+
     res.status(500).json({
       message: "Failed to create workspace",
       error: error.message,
