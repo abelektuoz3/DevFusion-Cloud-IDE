@@ -1,7 +1,8 @@
+// routes/run.js
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
-const auth = require("../middleware/auth");
+const { protect } = require("../middleware/auth");
 
 // Language mapping to Piston language names
 const LANGUAGE_MAP = {
@@ -15,7 +16,7 @@ const LANGUAGE_MAP = {
 // @desc    Execute code using Piston
 // @route   POST /api/run
 // @access  Private
-router.post("/", auth, async (req, res) => {
+router.post("/", protect, async (req, res) => {
   try {
     const { language, code, stdin } = req.body;
 
@@ -48,22 +49,22 @@ router.post("/", auth, async (req, res) => {
     // Try Piston first
     let response;
     try {
-      response = await axios.post(
-        `${PISTON_URL}/api/v2/execute`,
-        payload,
-        {
-          timeout: 30000,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      response = await axios.post(`${PISTON_URL}/api/v2/execute`, payload, {
+        timeout: 30000,
+        headers: { "Content-Type": "application/json" },
+      });
     } catch (pistonError) {
-      console.log("⚠️ Piston unavailable, using fallback:", pistonError.message);
-      
-      // If Piston fails, return a user-friendly message
+      console.log(
+        "⚠️ Piston unavailable, using fallback:",
+        pistonError.message,
+      );
+
       return res.status(503).json({
         output: "",
-        error: "Code execution service is currently unavailable. Please try again later.",
-        details: "The execution engine is not responding. This is a temporary issue.",
+        error:
+          "Code execution service is currently unavailable. Please try again later.",
+        details:
+          "The execution engine is not responding. This is a temporary issue.",
         success: false,
       });
     }

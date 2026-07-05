@@ -1,8 +1,9 @@
+// routes/auth.js
 const express = require("express");
 const router = express.Router();
 const { body } = require("express-validator");
 const authController = require("../controllers/authController");
-const auth = require("../middleware/auth");
+const { protect } = require("../middleware/auth");
 
 // Validation rules
 const registerValidation = [
@@ -23,10 +24,10 @@ const loginValidation = [
 
 // Routes
 router.post("/register", registerValidation, authController.register);
-router.post("/verify-otp", authController.verifyOTP);  // ← ADD THIS
-router.post("/resend-otp", authController.resendOTP);  // ← ADD THIS
+router.post("/verify-otp", authController.verifyOTP);
+router.post("/resend-otp", authController.resendOTP);
 router.post("/login", loginValidation, authController.login);
-router.get("/me", auth, authController.getCurrentUser);
-router.post("/logout", auth, authController.logout);
+router.get("/me", protect, authController.getCurrentUser);
+router.post("/logout", protect, authController.logout);
 
 module.exports = router;

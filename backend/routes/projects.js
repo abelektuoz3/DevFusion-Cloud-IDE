@@ -1,10 +1,11 @@
+// routes/projects.js
 const express = require("express");
 const router = express.Router();
-const auth = require("../middleware/auth");
+const { protect } = require("../middleware/auth");
 const Project = require("../models/Project");
 
 // All project routes require authentication
-router.use(auth);
+router.use(protect);
 
 // @desc    Create a project
 // @route   POST /api/projects
