@@ -1,76 +1,131 @@
+// server.js - UPDATED VERSION
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-require("dotenv").config();
-
+const compression = require("compression");
+const rateLimit = require("express-rate-limit");
+const dotenv = require("dotenv");
 const connectDB = require("./config/db");
-const authRoutes = require("./routes/auth");
-const projectRoutes = require("./routes/projects");
-const runRoutes = require("./routes/run");
 
-// Connect to MongoDB
+// Load env vars
+dotenv.config();
+
+// Connect to database
 connectDB();
 
 const app = express();
 
-// ✅ FIXED CORS CONFIGURATION
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:5173",
-  "https://dev-fusion-cloud-ide.onrender.com",
-  "https://devfusion-frontend.vercel.app",
-  process.env.CLIENT_URL,
-].filter(Boolean); // Remove any undefined values
+// Security middleware
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
 
-// Middleware
-app.use(helmet());
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Too many requests from this IP, please try again later.",
+});
+app.use("/api", limiter);
+
+// Compression
+app.use(compression());
+
+// CORS
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps, curl, etc.)
-      if (!origin) return callback(null, true);
-      
-      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === "development") {
-        callback(null, true);
-      } else {
-        console.log("❌ Blocked CORS request from:", origin);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: process.env.FRONTEND_URL || "https://your-frontend.vercel.app",
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  })
+  }),
 );
-app.use(express.json({ limit: "10mb" }));
+
+// Body parser middleware
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
+// Import routes
+const authRoutes = require("./routes/auth");
+const workspaceRoutes = require("./routes/workspaces");
+const folderRoutes = require("./routes/folders");
+const fileRoutes = require("./routes/files");
+const settingsRoutes = require("./routes/settings");
+const notificationRoutes = require("./routes/notifications");
+const searchRoutes = require("./routes/search");
+const projectRoutes = require("./routes/projects");
+const runRoutes = require("./routes/run");
 
 // Routes
-app.get("/api/health", (req, res) => {
+app.use("/api/auth", authRoutes);
+app.use("/api/workspaces", workspaceRoutes);
+app.use("/api/folders", folderRoutes);
+app.use("/api/files", fileRoutes);
+app.use("/api/settings", settingsRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/search", searchRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/run", runRoutes);
+
+// Health check endpoint
+app.get("/health", (req, res) => {
   res.json({
     status: "OK",
-    message: "DevFusion API is running",
+    message: "DevFusion Workspace v2 API is running",
+    version: "2.0.0",
     timestamp: new Date().toISOString(),
   });
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/projects", projectRoutes);
-app.use("/api/run", runRoutes);
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error("Server Error:", err);
-  res.status(500).json({ error: "Something went wrong!" });
+// Root route
+app.get("/", (req, res) => {
+  res.json({
+    message: "DevFusion Workspace v2 API",
+    version: "2.0.0",
+    status: "Running",
+    endpoints: {
+      auth: "/api/auth",
+      workspaces: "/api/workspaces",
+      folders: "/api/folders",
+      files: "/api/files",
+      settings: "/api/settings",
+      notifications: "/api/notifications",
+      search: "/api/search",
+      projects: "/api/projects",
+      run: "/api/run",
+    },
+  });
 });
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ error: "Route not found" });
+  res.status(404).json({
+    message: "Route not found",
+    path: req.originalUrl,
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error("❌ Error:", err.stack);
+
+  const status = err.status || 500;
+  const message = err.message || "Internal Server Error";
+
+  res.status(status).json({
+    message: message,
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+  });
 });
 
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📍 http://localhost:${PORT}`);
-  console.log(`📋 Allowed origins:`, allowedOrigins);
+  console.log(`📡 Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || "Not set"}`);
 });
+
+module.exports = app;

@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [pendingEmail, setPendingEmail] = useState(
-    localStorage.getItem("pendingEmail") || ""
+    localStorage.getItem("pendingEmail") || "",
   );
 
   // Set token on login/register
@@ -102,7 +102,7 @@ export const AuthProvider = ({ children }) => {
 
       setAuthToken(token);
       setUser(user);
-      
+
       if (user && !user.isVerified) {
         setPendingEmailPersist(email);
       } else {
@@ -189,7 +189,7 @@ export const AuthProvider = ({ children }) => {
         verifyOTP,
         resendOTP,
         pendingEmail,
-        setPendingEmail: setPendingEmailPersist
+        setPendingEmail: setPendingEmailPersist,
       }}>
       {children}
     </AuthContext.Provider>
