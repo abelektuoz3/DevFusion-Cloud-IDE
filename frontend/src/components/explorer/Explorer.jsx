@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { useWorkspace } from "../../context/WorkspaceContext";
 import {
   FiFolder,
-  FiFolderOpen,
   FiFile,
   FiPlus,
   FiChevronDown,
@@ -66,9 +65,10 @@ const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
             : <FiChevronRight size={14} />}
           </span>
           <span className="mr-1">
-            {isExpanded ?
-              <FiFolderOpen className="text-yellow-500" />
-            : <FiFolder className="text-yellow-500" />}
+            <FiFolder
+              className={`${isExpanded ? "text-yellow-400" : "text-yellow-500"}`}
+              size={16}
+            />
           </span>
           <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">
             {node.name}
