@@ -1,5 +1,5 @@
-// src/context/WorkspaceContext.jsx
-import React, { createContext, useContext, useState, useEffect } from "react";
+// frontend/src/context/WorkspaceContext.jsx
+import React, { createContext, useContext, useState } from "react";
 import { workspaceAPI, folderAPI, fileAPI } from "../services/api";
 import toast from "react-hot-toast";
 
@@ -26,7 +26,7 @@ export const WorkspaceProvider = ({ children }) => {
     try {
       setLoading(true);
       const response = await workspaceAPI.getAll();
-      setWorkspaces(response.data.workspaces);
+      setWorkspaces(response.data.workspaces || []);
     } catch (error) {
       console.error("Load workspaces error:", error);
       toast.error("Failed to load workspaces");
@@ -42,7 +42,7 @@ export const WorkspaceProvider = ({ children }) => {
       const { workspace, folderTree, files } = response.data;
       setCurrentWorkspace(workspace);
       setFolderTree(folderTree);
-      setFiles(files);
+      setFiles(files || []);
       return { workspace, folderTree, files };
     } catch (error) {
       console.error("Load workspace error:", error);
@@ -56,14 +56,19 @@ export const WorkspaceProvider = ({ children }) => {
   const createWorkspace = async (data) => {
     try {
       setLoading(true);
+      console.log("Creating workspace with data:", data);
       const response = await workspaceAPI.create(data);
+      console.log("Workspace created response:", response.data);
       const newWorkspace = response.data.workspace;
       setWorkspaces([newWorkspace, ...workspaces]);
       toast.success(`Workspace "${newWorkspace.name}" created!`);
       return newWorkspace;
     } catch (error) {
       console.error("Create workspace error:", error);
-      toast.error("Failed to create workspace");
+      console.error("Error response:", error.response?.data);
+      const errorMessage =
+        error.response?.data?.message || "Failed to create workspace";
+      toast.error(errorMessage);
       return null;
     } finally {
       setLoading(false);
@@ -173,7 +178,6 @@ export const WorkspaceProvider = ({ children }) => {
   };
 
   const openFile = async (fileId) => {
-    // Check if already open
     const existing = openTabs.find((tab) => tab.id === fileId);
     if (existing) {
       setActiveTab(fileId);
@@ -242,6 +246,7 @@ export const WorkspaceProvider = ({ children }) => {
     loading,
     openTabs,
     activeTab,
+    setActiveTab,
     loadWorkspaces,
     loadWorkspace,
     createWorkspace,
@@ -254,7 +259,6 @@ export const WorkspaceProvider = ({ children }) => {
     deleteFile,
     openFile,
     closeTab,
-    setActiveTab,
     saveFile,
     autosaveFile,
   };

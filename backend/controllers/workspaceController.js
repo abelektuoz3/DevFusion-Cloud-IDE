@@ -1,4 +1,4 @@
-// controllers/workspaceController.js
+// backend/controllers/workspaceController.js
 const Workspace = require("../models/Workspace");
 const Folder = require("../models/Folder");
 const File = require("../models/File");
@@ -11,10 +11,15 @@ exports.createWorkspace = async (req, res) => {
   try {
     const { name, description, isPublic } = req.body;
 
+    // Validate name is provided
+    if (!name || name.trim() === "") {
+      return res.status(400).json({ message: "Workspace name is required" });
+    }
+
     // Create workspace
     const workspace = await Workspace.create({
-      name,
-      description,
+      name: name.trim(),
+      description: description || "",
       owner: req.user._id,
       isPublic: isPublic || false,
     });
@@ -35,7 +40,7 @@ exports.createWorkspace = async (req, res) => {
     await Notification.create({
       userId: req.user._id,
       type: "success",
-      title: "Workspace Created!",
+      title: "Workspace Created! 🎉",
       message: `Your workspace "${name}" has been created successfully.`,
       link: `/workspace/${workspace._id}`,
     });
@@ -49,7 +54,16 @@ exports.createWorkspace = async (req, res) => {
     });
   } catch (error) {
     console.error("Create workspace error:", error);
-    res.status(500).json({ message: "Server error" });
+    // Send more detailed error
+    if (error.code === 11000) {
+      return res
+        .status(400)
+        .json({ message: "Workspace with this name already exists" });
+    }
+    res.status(500).json({
+      message: "Failed to create workspace",
+      error: error.message,
+    });
   }
 };
 
@@ -64,10 +78,10 @@ exports.getWorkspaces = async (req, res) => {
       .sort({ lastAccessed: -1 })
       .populate("owner", "username email avatar");
 
-    res.json({ workspaces });
+    res.json({ workspaces: workspaces || [] });
   } catch (error) {
     console.error("Get workspaces error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to fetch workspaces" });
   }
 };
 
@@ -109,11 +123,11 @@ exports.getWorkspaceById = async (req, res) => {
     res.json({
       workspace,
       folderTree,
-      files,
+      files: files || [],
     });
   } catch (error) {
     console.error("Get workspace error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to fetch workspace" });
   }
 };
 
@@ -149,7 +163,7 @@ exports.updateWorkspace = async (req, res) => {
     });
   } catch (error) {
     console.error("Update workspace error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to update workspace" });
   }
 };
 
@@ -180,12 +194,15 @@ exports.deleteWorkspace = async (req, res) => {
     res.json({ message: "Workspace deleted successfully" });
   } catch (error) {
     console.error("Delete workspace error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to delete workspace" });
   }
 };
 
-// Helper functions
+// ==================== Helper Functions ====================
+
 async function getFolderTree(folderId) {
+  if (!folderId) return null;
+
   const folder = await Folder.findById(folderId);
   if (!folder) return null;
 
@@ -197,7 +214,7 @@ async function getFolderTree(folderId) {
   const tree = {
     ...folder.toJSON(),
     children: [],
-    files: files,
+    files: files || [],
   };
 
   for (const child of children) {
@@ -211,6 +228,8 @@ async function getFolderTree(folderId) {
 }
 
 async function deleteFolderTree(folderId) {
+  if (!folderId) return;
+
   const children = await Folder.find({ parentFolder: folderId });
   for (const child of children) {
     await deleteFolderTree(child._id);
