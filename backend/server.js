@@ -1,4 +1,4 @@
-// server.js - UPDATED VERSION
+// backend/server.js
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -15,6 +15,9 @@ connectDB();
 
 const app = express();
 
+// ✅ Enable trust proxy for Render (Fixes rate-limit error)
+app.set("trust proxy", 1);
+
 // Security middleware
 app.use(
   helmet({
@@ -22,21 +25,43 @@ app.use(
   }),
 );
 
-// Rate limiting
+// ✅ Updated Rate limiting with trust proxy
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: "Too many requests from this IP, please try again later.",
+  trustProxy: true, // Add this
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use("/api", limiter);
 
 // Compression
 app.use(compression());
 
-// CORS
+// ✅ Updated CORS - Allow both development and production URLs
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "https://dev-fusion-cloud-ide.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "https://devfusion-cloud-ide.vercel.app",
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "https://your-frontend.vercel.app",
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      // Check if origin is allowed
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.log("Blocked origin:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
