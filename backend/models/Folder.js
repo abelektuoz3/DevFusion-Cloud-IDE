@@ -22,8 +22,8 @@ const folderSchema = new mongoose.Schema(
     },
     path: {
       type: String,
-      required: true,
-      default: "", // Add default to prevent validation errors
+      // ✅ Remove required: true - let the pre-save middleware handle it
+      default: "",
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
@@ -50,38 +50,53 @@ folderSchema.index(
 );
 folderSchema.index({ path: 1 });
 
-// ✅ Fix: Use function declaration instead of arrow function
-folderSchema.pre("save", function (next) {
-  // Only generate path if it's not already set
-  if (!this.path) {
-    if (this.parentFolder) {
-      // For subfolders, get parent path
-      mongoose
-        .model("Folder")
-        .findById(this.parentFolder)
-        .then((parent) => {
-          if (parent) {
-            this.path = `${parent.path}/${this.name}`;
-          } else {
-            this.path = `/${this.name}`;
-          }
-          next();
-        })
-        .catch((err) => {
-          console.error("Error finding parent folder:", err);
-          // Fallback
+// ✅ Fix: Use async/await for better handling
+folderSchema.pre("save", async function (next) {
+  try {
+    // Only generate path if it's empty
+    if (!this.path || this.path === "") {
+      if (this.parentFolder) {
+        // For subfolders, get parent path
+        const parent = await mongoose
+          .model("Folder")
+          .findById(this.parentFolder);
+        if (parent) {
+          this.path = `${parent.path}/${this.name}`;
+        } else {
           this.path = `/${this.name}`;
-          next();
-        });
-    } else {
-      // Root folder
-      this.path = `/${this.name}`;
-      next();
+        }
+      } else {
+        // Root folder
+        this.path = `/${this.name}`;
+      }
     }
-  } else {
+    next();
+  } catch (error) {
+    console.error("Error in folder pre-save middleware:", error);
+    // Fallback: set a default path
+    this.path = `/${this.name}`;
     next();
   }
 });
+
+// ✅ Add a static method to create a folder with path
+folderSchema.statics.createWithPath = async function (data) {
+  const folder = new this(data);
+  // Generate path before saving
+  if (!folder.path || folder.path === "") {
+    if (folder.parentFolder) {
+      const parent = await this.findById(folder.parentFolder);
+      if (parent) {
+        folder.path = `${parent.path}/${folder.name}`;
+      } else {
+        folder.path = `/${folder.name}`;
+      }
+    } else {
+      folder.path = `/${folder.name}`;
+    }
+  }
+  return folder.save();
+};
 
 folderSchema.methods.getFullPath = function () {
   return this.path;

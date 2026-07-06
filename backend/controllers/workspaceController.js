@@ -33,17 +33,17 @@ exports.createWorkspace = async (req, res) => {
 
     console.log("✅ Workspace created:", workspace._id);
 
-    // ✅ Create root folder with explicit path
+    // ✅ Create root folder - let the pre-save middleware handle the path
     const rootFolder = new Folder({
       name: "root",
       workspace: workspace._id,
       parentFolder: null,
       owner: req.user._id,
-      path: `/${workspace._id}/root`, // Explicitly set path
     });
 
     await rootFolder.save();
     console.log("✅ Root folder created:", rootFolder._id);
+    console.log("✅ Root folder path:", rootFolder.path);
 
     // Update workspace with root folder
     workspace.rootFolder = rootFolder._id;
