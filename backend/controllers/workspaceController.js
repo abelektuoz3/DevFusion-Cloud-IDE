@@ -23,38 +23,23 @@ exports.createWorkspace = async (req, res) => {
 
     console.log("✅ Creating workspace with name:", name);
 
-    // Create workspace
+    // ✅ Create workspace WITHOUT a root folder
     const workspace = await Workspace.create({
       name: name.trim(),
       description: description || "",
       owner: req.user._id,
       isPublic: isPublic || false,
+      // rootFolder is null by default
     });
 
     console.log("✅ Workspace created:", workspace._id);
-
-    // ✅ Create root folder - let the pre-save middleware handle the path
-    const rootFolder = new Folder({
-      name: "root",
-      workspace: workspace._id,
-      parentFolder: null,
-      owner: req.user._id,
-    });
-
-    await rootFolder.save();
-    console.log("✅ Root folder created:", rootFolder._id);
-    console.log("✅ Root folder path:", rootFolder.path);
-
-    // Update workspace with root folder
-    workspace.rootFolder = rootFolder._id;
-    await workspace.save();
 
     // Create welcome notification
     await Notification.create({
       userId: req.user._id,
       type: "success",
       title: "Workspace Created! 🎉",
-      message: `Your workspace "${name}" has been created successfully.`,
+      message: `Your workspace "${name}" has been created successfully. Start adding files and folders!`,
       link: `/workspace/${workspace._id}`,
     });
 
@@ -62,7 +47,7 @@ exports.createWorkspace = async (req, res) => {
       message: "Workspace created successfully",
       workspace: {
         ...workspace.toJSON(),
-        rootFolder: rootFolder,
+        rootFolder: null, // ✅ No root folder
       },
     });
   } catch (error) {
@@ -75,7 +60,6 @@ exports.createWorkspace = async (req, res) => {
         .json({ message: "Workspace with this name already exists" });
     }
 
-    // Handle validation errors
     if (error.name === "ValidationError") {
       const errors = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({ message: errors.join(", ") });
@@ -128,8 +112,29 @@ exports.getWorkspaceById = async (req, res) => {
       return res.status(403).json({ message: "Access denied" });
     }
 
-    const folderTree = await getFolderTree(workspace.rootFolder);
-    const files = await File.find({ workspace: workspace._id }).select(
+    // ✅ Get all top-level folders (where parentFolder is null)
+    const rootFolders = await Folder.find({
+      workspace: workspace._id,
+      parentFolder: null,
+    });
+
+    // ✅ Get all files at root level (no parent folder)
+    const rootFiles = await File.find({
+      workspace: workspace._id,
+      folder: null,
+    });
+
+    // ✅ Build folder tree for all root folders
+    const folderTree = [];
+    for (const folder of rootFolders) {
+      const tree = await getFolderTree(folder._id);
+      if (tree) {
+        folderTree.push(tree);
+      }
+    }
+
+    // ✅ Get all files in the workspace
+    const allFiles = await File.find({ workspace: workspace._id }).select(
       "name path folder language size updatedAt",
     );
 
@@ -138,8 +143,9 @@ exports.getWorkspaceById = async (req, res) => {
 
     res.json({
       workspace,
-      folderTree,
-      files: files || [],
+      folderTree, // ✅ Array of root folders
+      rootFiles, // ✅ Files at root level
+      files: allFiles || [],
     });
   } catch (error) {
     console.error("Get workspace error:", error);
@@ -196,7 +202,7 @@ exports.deleteWorkspace = async (req, res) => {
     }
 
     await File.deleteMany({ workspace: workspace._id });
-    await deleteFolderTree(workspace.rootFolder);
+    await deleteAllFolders(workspace._id);
     await workspace.deleteOne();
 
     res.json({ message: "Workspace deleted successfully" });
@@ -235,12 +241,10 @@ async function getFolderTree(folderId) {
   return tree;
 }
 
-async function deleteFolderTree(folderId) {
-  if (!folderId) return;
-
-  const children = await Folder.find({ parentFolder: folderId });
-  for (const child of children) {
-    await deleteFolderTree(child._id);
+async function deleteAllFolders(workspaceId) {
+  // Get all folders in the workspace
+  const folders = await Folder.find({ workspace: workspaceId });
+  for (const folder of folders) {
+    await Folder.findByIdAndDelete(folder._id);
   }
-  await Folder.findByIdAndDelete(folderId);
 }

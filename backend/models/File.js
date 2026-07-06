@@ -1,3 +1,4 @@
+// backend/models/File.js
 const mongoose = require("mongoose");
 
 const fileSchema = new mongoose.Schema(
@@ -20,7 +21,7 @@ const fileSchema = new mongoose.Schema(
     folder: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Folder",
-      required: true,
+      default: null, // ✅ Allow null for root level files
     },
     workspace: {
       type: mongoose.Schema.Types.ObjectId,
@@ -60,10 +61,15 @@ fileSchema.index({ content: "text" });
 
 fileSchema.pre("save", async function (next) {
   if (this.isNew && !this.path) {
-    const folder = await mongoose.model("Folder").findById(this.folder);
-    if (folder) {
-      this.path = `${folder.path}/${this.name}`;
+    if (this.folder) {
+      const folder = await mongoose.model("Folder").findById(this.folder);
+      if (folder) {
+        this.path = `${folder.path}/${this.name}`;
+      } else {
+        this.path = `/${this.name}`;
+      }
     } else {
+      // ✅ Root level file
       this.path = `/${this.name}`;
     }
   }

@@ -1,4 +1,4 @@
-// controllers/folderController.js
+// backend/controllers/folderController.js
 const Folder = require("../models/Folder");
 const File = require("../models/File");
 
@@ -34,7 +34,7 @@ exports.createFolder = async (req, res) => {
     });
   } catch (error) {
     console.error("Create folder error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to create folder" });
   }
 };
 
@@ -52,7 +52,6 @@ exports.getFolder = async (req, res) => {
       return res.status(404).json({ message: "Folder not found" });
     }
 
-    // Get children
     const children = await Folder.find({ parentFolder: folder._id });
     const files = await File.find({ folder: folder._id });
 
@@ -63,7 +62,7 @@ exports.getFolder = async (req, res) => {
     });
   } catch (error) {
     console.error("Get folder error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to fetch folder" });
   }
 };
 
@@ -92,7 +91,7 @@ exports.updateFolder = async (req, res) => {
     });
   } catch (error) {
     console.error("Update folder error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to update folder" });
   }
 };
 
@@ -110,10 +109,10 @@ exports.deleteFolder = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // Delete all files in folder
+    // Delete all files in this folder
     await File.deleteMany({ folder: folder._id });
 
-    // Delete all subfolders
+    // Delete all subfolders recursively
     const children = await Folder.find({ parentFolder: folder._id });
     for (const child of children) {
       await File.deleteMany({ folder: child._id });
@@ -125,6 +124,6 @@ exports.deleteFolder = async (req, res) => {
     res.json({ message: "Folder deleted successfully" });
   } catch (error) {
     console.error("Delete folder error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to delete folder" });
   }
 };

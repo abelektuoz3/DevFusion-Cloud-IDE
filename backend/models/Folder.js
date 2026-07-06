@@ -22,7 +22,6 @@ const folderSchema = new mongoose.Schema(
     },
     path: {
       type: String,
-      // ✅ Remove required: true - let the pre-save middleware handle it
       default: "",
     },
     owner: {
@@ -50,13 +49,11 @@ folderSchema.index(
 );
 folderSchema.index({ path: 1 });
 
-// ✅ Fix: Use async/await for better handling
+// ✅ Pre-save middleware to generate path
 folderSchema.pre("save", async function (next) {
   try {
-    // Only generate path if it's empty
     if (!this.path || this.path === "") {
       if (this.parentFolder) {
-        // For subfolders, get parent path
         const parent = await mongoose
           .model("Folder")
           .findById(this.parentFolder);
@@ -66,37 +63,17 @@ folderSchema.pre("save", async function (next) {
           this.path = `/${this.name}`;
         }
       } else {
-        // Root folder
+        // ✅ Root level folder - no parent
         this.path = `/${this.name}`;
       }
     }
     next();
   } catch (error) {
     console.error("Error in folder pre-save middleware:", error);
-    // Fallback: set a default path
     this.path = `/${this.name}`;
     next();
   }
 });
-
-// ✅ Add a static method to create a folder with path
-folderSchema.statics.createWithPath = async function (data) {
-  const folder = new this(data);
-  // Generate path before saving
-  if (!folder.path || folder.path === "") {
-    if (folder.parentFolder) {
-      const parent = await this.findById(folder.parentFolder);
-      if (parent) {
-        folder.path = `${parent.path}/${folder.name}`;
-      } else {
-        folder.path = `/${folder.name}`;
-      }
-    } else {
-      folder.path = `/${folder.name}`;
-    }
-  }
-  return folder.save();
-};
 
 folderSchema.methods.getFullPath = function () {
   return this.path;
