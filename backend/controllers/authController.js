@@ -1,178 +1,325 @@
-// backend/controllers/fileController.js
-const File = require("../models/File");
-const Folder = require("../models/Folder");
+// backend/controllers/authController.js
+const User = require("../models/User");
+const jwt = require("jsonwebtoken");
+const { validationResult } = require("express-validator");
+const {
+  sendOTPEmail,
+  sendVerificationSuccessEmail,
+  generateOTP,
+} = require("../services/emailService");
 
-// @desc    Create a file
-// @route   POST /api/files/:workspaceId
-// @access  Private
-exports.createFile = async (req, res) => {
+// Generate JWT Token
+const generateToken = (userId) => {
+  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
+};
+
+// @desc    Register user
+// @route   POST /api/auth/register
+// @access  Public
+const register = async (req, res) => {
   try {
-    const { name, content = "", folderId } = req.body;
-    const workspaceId = req.params.workspaceId;
-
-    // Check if file already exists
-    const existingFile = await File.findOne({
-      workspace: workspaceId,
-      folder: folderId || null, // ✅ Allow null
-      name,
-    });
-
-    if (existingFile) {
-      return res.status(400).json({ message: "File already exists" });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        error: errors.array()[0].msg,
+      });
     }
 
-    const file = await File.create({
-      name,
-      content,
-      folder: folderId || null, // ✅ Allow null for root level
-      workspace: workspaceId,
-      owner: req.user._id,
+    const { username, email, password } = req.body;
+
+    // Check if user exists
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }],
     });
+
+    if (existingUser) {
+      return res.status(400).json({
+        error: "User with this email or username already exists",
+      });
+    }
+
+    // Generate OTP
+    const otp = generateOTP();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Create user
+    const user = new User({
+      username,
+      email,
+      password,
+      isVerified: false,
+      otp: {
+        code: otp,
+        expiresAt: otpExpires,
+      },
+      otpAttempts: 0,
+    });
+
+    await user.save();
+
+    // Send OTP email
+    await sendOTPEmail(email, otp, username);
+
+    const token = generateToken(user._id);
 
     res.status(201).json({
-      message: "File created successfully",
-      file,
+      message: "User created. Please verify your email with the OTP sent.",
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        isVerified: false,
+        createdAt: user.createdAt,
+      },
+      requiresVerification: true,
     });
   } catch (error) {
-    console.error("Create file error:", error);
-    res.status(500).json({ message: "Failed to create file" });
+    console.error("Registration error:", error);
+    res.status(500).json({ error: "Server error" });
   }
 };
 
-// @desc    Get file content
-// @route   GET /api/files/:id
-// @access  Private
-exports.getFileContent = async (req, res) => {
+// @desc    Verify OTP
+// @route   POST /api/auth/verify-otp
+// @access  Public
+const verifyOTP = async (req, res) => {
   try {
-    const file = await File.findById(req.params.id)
-      .populate("folder", "name path")
-      .populate("workspace", "name");
+    const { email, otp } = req.body;
 
-    if (!file) {
-      return res.status(404).json({ message: "File not found" });
+    if (!email || !otp) {
+      return res.status(400).json({
+        error: "Email and OTP are required",
+      });
     }
 
-    res.json({ file });
-  } catch (error) {
-    console.error("Get file error:", error);
-    res.status(500).json({ message: "Failed to fetch file" });
-  }
-};
+    const user = await User.findOne({ email });
 
-// @desc    Update file content
-// @route   PUT /api/files/:id
-// @access  Private
-exports.updateFileContent = async (req, res) => {
-  try {
-    const { content } = req.body;
-
-    const file = await File.findById(req.params.id);
-    if (!file) {
-      return res.status(404).json({ message: "File not found" });
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found",
+      });
     }
 
-    if (file.owner.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized" });
+    if (user.isVerified) {
+      return res.status(400).json({
+        error: "User is already verified",
+      });
     }
 
-    file.content = content;
-    file.isSaved = true;
-    file.lastModified = new Date();
-    await file.save();
+    // Check OTP attempts
+    if (user.otpAttempts >= 5) {
+      return res.status(429).json({
+        error: "Too many failed attempts. Please request a new OTP.",
+      });
+    }
+
+    // Check if OTP exists
+    if (!user.otp || !user.otp.code) {
+      return res.status(400).json({
+        error: "No OTP found. Please request a new one.",
+      });
+    }
+
+    // Check if OTP is expired
+    if (new Date() > user.otp.expiresAt) {
+      user.otpAttempts += 1;
+      await user.save();
+      return res.status(400).json({
+        error: "OTP has expired. Please request a new one.",
+      });
+    }
+
+    // Verify OTP
+    if (user.otp.code !== otp) {
+      user.otpAttempts += 1;
+      await user.save();
+      return res.status(400).json({
+        error: "Invalid OTP",
+      });
+    }
+
+    // OTP is correct - verify user
+    user.isVerified = true;
+    user.otp = { code: null, expiresAt: null };
+    user.otpAttempts = 0;
+    await user.save();
+
+    // Send welcome email
+    await sendVerificationSuccessEmail(email, user.username);
+
+    const token = generateToken(user._id);
 
     res.json({
-      message: "File saved successfully",
-      file,
-    });
-  } catch (error) {
-    console.error("Update file error:", error);
-    res.status(500).json({ message: "Failed to update file" });
-  }
-};
-
-// @desc    Rename file
-// @route   PATCH /api/files/:id/rename
-// @access  Private
-exports.renameFile = async (req, res) => {
-  try {
-    const { name } = req.body;
-
-    const file = await File.findById(req.params.id);
-    if (!file) {
-      return res.status(404).json({ message: "File not found" });
-    }
-
-    if (file.owner.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
-
-    file.name = name;
-    await file.save();
-
-    res.json({
-      message: "File renamed successfully",
-      file,
-    });
-  } catch (error) {
-    console.error("Rename file error:", error);
-    res.status(500).json({ message: "Failed to rename file" });
-  }
-};
-
-// @desc    Delete file
-// @route   DELETE /api/files/:id
-// @access  Private
-exports.deleteFile = async (req, res) => {
-  try {
-    const file = await File.findById(req.params.id);
-    if (!file) {
-      return res.status(404).json({ message: "File not found" });
-    }
-
-    if (file.owner.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
-
-    await file.deleteOne();
-
-    res.json({ message: "File deleted successfully" });
-  } catch (error) {
-    console.error("Delete file error:", error);
-    res.status(500).json({ message: "Failed to delete file" });
-  }
-};
-
-// @desc    Autosave file
-// @route   POST /api/files/:id/autosave
-// @access  Private
-exports.autosaveFile = async (req, res) => {
-  try {
-    const { content } = req.body;
-
-    const file = await File.findById(req.params.id);
-    if (!file) {
-      return res.status(404).json({ message: "File not found" });
-    }
-
-    if (file.owner.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
-
-    file.content = content;
-    file.isSaved = true;
-    file.lastModified = new Date();
-    await file.save();
-
-    res.json({
-      message: "File autosaved",
-      file: {
-        id: file._id,
-        size: file.size,
-        lastModified: file.lastModified,
+      message: "Email verified successfully!",
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        isVerified: true,
+        createdAt: user.createdAt,
       },
     });
   } catch (error) {
-    console.error("Autosave error:", error);
-    res.status(500).json({ message: "Failed to autosave file" });
+    console.error("OTP verification error:", error);
+    res.status(500).json({ error: "Server error" });
   }
+};
+
+// @desc    Resend OTP
+// @route   POST /api/auth/resend-otp
+// @access  Public
+const resendOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        error: "Email is required",
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found",
+      });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({
+        error: "User is already verified",
+      });
+    }
+
+    // Rate limiting: 1 minute between requests
+    if (user.lastOtpRequest) {
+      const timeSinceLastRequest =
+        Date.now() - new Date(user.lastOtpRequest).getTime();
+      if (timeSinceLastRequest < 60000) {
+        return res.status(429).json({
+          error: "Please wait 1 minute before requesting a new OTP",
+        });
+      }
+    }
+
+    // Generate new OTP
+    const otp = generateOTP();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    user.otp = {
+      code: otp,
+      expiresAt: otpExpires,
+    };
+    user.otpAttempts = 0;
+    user.lastOtpRequest = new Date();
+    await user.save();
+
+    // Send OTP email
+    await sendOTPEmail(email, otp, user.username);
+
+    res.json({
+      message: "New OTP sent to your email",
+    });
+  } catch (error) {
+    console.error("Resend OTP error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// @desc    Login user
+// @route   POST /api/auth/login
+// @access  Public
+const login = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        error: errors.array()[0].msg,
+      });
+    }
+
+    const { email, password } = req.body;
+
+    // Find user
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(401).json({
+        error: "Invalid credentials",
+      });
+    }
+
+    // Check if email is verified
+    if (!user.isVerified) {
+      return res.status(403).json({
+        error: "Please verify your email first. Check your inbox for the OTP.",
+        requiresVerification: true,
+        email: user.email,
+      });
+    }
+
+    // Check password
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({
+        error: "Invalid credentials",
+      });
+    }
+
+    // Generate token
+    const token = generateToken(user._id);
+
+    res.json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// @desc    Get current user
+// @route   GET /api/auth/me
+// @access  Private
+const getCurrentUser = async (req, res) => {
+  try {
+    res.json({ user: req.user });
+  } catch (error) {
+    console.error("Get user error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// @desc    Logout user
+// @route   POST /api/auth/logout
+// @access  Private
+const logout = async (req, res) => {
+  try {
+    res.json({ message: "Logout successful" });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+module.exports = {
+  register,
+  verifyOTP,
+  resendOTP,
+  login,
+  getCurrentUser,
+  logout,
 };

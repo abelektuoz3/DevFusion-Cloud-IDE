@@ -1,4 +1,4 @@
-// controllers/fileController.js
+// backend/controllers/fileController.js
 const File = require("../models/File");
 const Folder = require("../models/Folder");
 
@@ -13,7 +13,7 @@ exports.createFile = async (req, res) => {
     // Check if file already exists
     const existingFile = await File.findOne({
       workspace: workspaceId,
-      folder: folderId,
+      folder: folderId || null,
       name,
     });
 
@@ -24,7 +24,7 @@ exports.createFile = async (req, res) => {
     const file = await File.create({
       name,
       content,
-      folder: folderId,
+      folder: folderId || null,
       workspace: workspaceId,
       owner: req.user._id,
     });
@@ -35,7 +35,7 @@ exports.createFile = async (req, res) => {
     });
   } catch (error) {
     console.error("Create file error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to create file" });
   }
 };
 
@@ -55,7 +55,7 @@ exports.getFileContent = async (req, res) => {
     res.json({ file });
   } catch (error) {
     console.error("Get file error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to fetch file" });
   }
 };
 
@@ -86,7 +86,7 @@ exports.updateFileContent = async (req, res) => {
     });
   } catch (error) {
     console.error("Update file error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to update file" });
   }
 };
 
@@ -115,7 +115,7 @@ exports.renameFile = async (req, res) => {
     });
   } catch (error) {
     console.error("Rename file error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to rename file" });
   }
 };
 
@@ -138,7 +138,7 @@ exports.deleteFile = async (req, res) => {
     res.json({ message: "File deleted successfully" });
   } catch (error) {
     console.error("Delete file error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to delete file" });
   }
 };
 
@@ -173,6 +173,6 @@ exports.autosaveFile = async (req, res) => {
     });
   } catch (error) {
     console.error("Autosave error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to autosave file" });
   }
 };
