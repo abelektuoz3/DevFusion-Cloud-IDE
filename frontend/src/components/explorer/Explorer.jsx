@@ -17,7 +17,6 @@ import {
   SiPython,
   SiJava,
   SiCplusplus,
-  SiCsharp,
   SiPhp,
   SiHtml5,
   SiCss3,
@@ -40,6 +39,7 @@ import {
   FaFileArchive,
   FaFileAudio,
   FaFileVideo,
+  FaFileCode,
 } from "react-icons/fa";
 import { IoDocumentText } from "react-icons/io5";
 import toast from "react-hot-toast";
@@ -106,8 +106,8 @@ const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
       h: <SiCplusplus className="text-blue-600" size={16} />,
       hpp: <SiCplusplus className="text-blue-600" size={16} />,
 
-      // C#
-      cs: <SiCsharp className="text-purple-500" size={16} />,
+      // C# - using FaFileCode instead
+      cs: <FaFileCode className="text-purple-500" size={16} />,
 
       // PHP
       php: <SiPhp className="text-indigo-400" size={16} />,
