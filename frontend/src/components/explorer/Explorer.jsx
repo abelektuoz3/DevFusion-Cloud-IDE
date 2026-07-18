@@ -10,8 +10,45 @@ import {
   FiFilePlus,
   FiEdit2,
   FiTrash2,
-  FiMoreVertical,
 } from "react-icons/fi";
+import {
+  SiJavascript,
+  SiTypescript,
+  SiPython,
+  SiJava,
+  SiCplusplus,
+  SiCsharp,
+  SiPhp,
+  SiHtml5,
+  SiCss3,
+  SiReact,
+  SiVuedotjs,
+  SiAngular,
+  SiSvelte,
+  SiGo,
+  SiRust,
+  SiRuby,
+  SiJson,
+  SiYaml,
+  SiMarkdown,
+  SiDocker,
+  SiNodedotjs,
+  SiNpm,
+  SiGit,
+  SiLinux,
+  SiApple,
+  SiWindows,
+} from "react-icons/si";
+import {
+  FaDatabase,
+  FaFileCode,
+  FaFileImage,
+  FaFilePdf,
+  FaFileArchive,
+  FaFileAudio,
+  FaFileVideo,
+} from "react-icons/fa";
+import { IoDocumentText } from "react-icons/io5";
 import toast from "react-hot-toast";
 
 const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
@@ -24,7 +61,6 @@ const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
     renameFile,
   } = useWorkspace();
   const [expandedFolders, setExpandedFolders] = useState(new Set());
-  const [contextMenu, setContextMenu] = useState(null);
 
   const toggleFolder = (folderId) => {
     const newSet = new Set(expandedFolders);
@@ -34,6 +70,195 @@ const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
       newSet.add(folderId);
     }
     setExpandedFolders(newSet);
+  };
+
+  // ✅ Get file icon based on extension
+  const getFileIcon = (filename) => {
+    const extension = filename.split(".").pop().toLowerCase();
+
+    const iconMap = {
+      // JavaScript
+      js: <SiJavascript className="text-yellow-400" size={16} />,
+      jsx: <SiReact className="text-cyan-400" size={16} />,
+      mjs: <SiJavascript className="text-yellow-400" size={16} />,
+
+      // TypeScript
+      ts: <SiTypescript className="text-blue-500" size={16} />,
+      tsx: <SiReact className="text-cyan-400" size={16} />,
+
+      // Python
+      py: <SiPython className="text-blue-400" size={16} />,
+
+      // Java
+      java: <SiJava className="text-red-500" size={16} />,
+
+      // C++
+      cpp: <SiCplusplus className="text-blue-600" size={16} />,
+      c: <SiCplusplus className="text-blue-600" size={16} />,
+      h: <SiCplusplus className="text-blue-600" size={16} />,
+      hpp: <SiCplusplus className="text-blue-600" size={16} />,
+
+      // C#
+      cs: <SiCsharp className="text-purple-500" size={16} />,
+
+      // PHP
+      php: <SiPhp className="text-indigo-400" size={16} />,
+
+      // HTML
+      html: <SiHtml5 className="text-orange-500" size={16} />,
+      htm: <SiHtml5 className="text-orange-500" size={16} />,
+
+      // CSS
+      css: <SiCss3 className="text-blue-500" size={16} />,
+      scss: <SiCss3 className="text-pink-500" size={16} />,
+      sass: <SiCss3 className="text-pink-500" size={16} />,
+      less: <SiCss3 className="text-blue-400" size={16} />,
+
+      // React
+      jsx: <SiReact className="text-cyan-400" size={16} />,
+      tsx: <SiReact className="text-cyan-400" size={16} />,
+
+      // Vue
+      vue: <SiVuedotjs className="text-green-500" size={16} />,
+
+      // Angular
+      angular: <SiAngular className="text-red-500" size={16} />,
+
+      // Svelte
+      svelte: <SiSvelte className="text-orange-500" size={16} />,
+
+      // Go
+      go: <SiGo className="text-cyan-500" size={16} />,
+
+      // Rust
+      rs: <SiRust className="text-orange-600" size={16} />,
+
+      // Ruby
+      rb: <SiRuby className="text-red-600" size={16} />,
+
+      // JSON
+      json: <SiJson className="text-yellow-500" size={16} />,
+
+      // YAML
+      yaml: <SiYaml className="text-red-500" size={16} />,
+      yml: <SiYaml className="text-red-500" size={16} />,
+
+      // Markdown
+      md: <SiMarkdown className="text-gray-400" size={16} />,
+
+      // Docker
+      dockerfile: <SiDocker className="text-blue-400" size={16} />,
+      Dockerfile: <SiDocker className="text-blue-400" size={16} />,
+
+      // Node
+      node: <SiNodedotjs className="text-green-500" size={16} />,
+
+      // NPM
+      npmrc: <SiNpm className="text-red-500" size={16} />,
+      package: <SiNpm className="text-red-500" size={16} />,
+
+      // Git
+      gitignore: <SiGit className="text-orange-500" size={16} />,
+      git: <SiGit className="text-orange-500" size={16} />,
+
+      // Database
+      sql: <FaDatabase className="text-blue-500" size={16} />,
+      db: <FaDatabase className="text-blue-500" size={16} />,
+
+      // Images
+      png: <FaFileImage className="text-purple-400" size={16} />,
+      jpg: <FaFileImage className="text-purple-400" size={16} />,
+      jpeg: <FaFileImage className="text-purple-400" size={16} />,
+      gif: <FaFileImage className="text-purple-400" size={16} />,
+      svg: <FaFileImage className="text-purple-400" size={16} />,
+      webp: <FaFileImage className="text-purple-400" size={16} />,
+      ico: <FaFileImage className="text-purple-400" size={16} />,
+
+      // PDF
+      pdf: <FaFilePdf className="text-red-500" size={16} />,
+
+      // Archive
+      zip: <FaFileArchive className="text-yellow-500" size={16} />,
+      rar: <FaFileArchive className="text-yellow-500" size={16} />,
+      tar: <FaFileArchive className="text-yellow-500" size={16} />,
+      gz: <FaFileArchive className="text-yellow-500" size={16} />,
+
+      // Audio
+      mp3: <FaFileAudio className="text-green-400" size={16} />,
+      wav: <FaFileAudio className="text-green-400" size={16} />,
+      flac: <FaFileAudio className="text-green-400" size={16} />,
+
+      // Video
+      mp4: <FaFileVideo className="text-purple-400" size={16} />,
+      avi: <FaFileVideo className="text-purple-400" size={16} />,
+      mov: <FaFileVideo className="text-purple-400" size={16} />,
+
+      // Config files
+      env: <IoDocumentText className="text-gray-400" size={16} />,
+      conf: <IoDocumentText className="text-gray-400" size={16} />,
+      config: <IoDocumentText className="text-gray-400" size={16} />,
+
+      // Shell
+      sh: <SiLinux className="text-green-500" size={16} />,
+      bash: <SiLinux className="text-green-500" size={16} />,
+      zsh: <SiLinux className="text-green-500" size={16} />,
+
+      // Special files
+      readme: <IoDocumentText className="text-blue-400" size={16} />,
+      license: <IoDocumentText className="text-gray-400" size={16} />,
+      changelog: <IoDocumentText className="text-gray-400" size={16} />,
+    };
+
+    // Check for special filenames (without extension)
+    const lowerFilename = filename.toLowerCase();
+    if (lowerFilename === "readme" || lowerFilename === "readme.md") {
+      return <IoDocumentText className="text-blue-400" size={16} />;
+    }
+    if (lowerFilename === "license" || lowerFilename === "license.md") {
+      return <IoDocumentText className="text-gray-400" size={16} />;
+    }
+    if (lowerFilename === "package.json") {
+      return <SiNpm className="text-red-500" size={16} />;
+    }
+    if (lowerFilename === "dockerfile") {
+      return <SiDocker className="text-blue-400" size={16} />;
+    }
+    if (lowerFilename === ".gitignore") {
+      return <SiGit className="text-orange-500" size={16} />;
+    }
+    if (lowerFilename === ".env" || lowerFilename === ".env.local") {
+      return <IoDocumentText className="text-gray-400" size={16} />;
+    }
+
+    return iconMap[extension] || <FiFile className="text-gray-400" size={16} />;
+  };
+
+  // ✅ Get file icon color for background
+  const getFileIconColor = (filename) => {
+    const extension = filename.split(".").pop().toLowerCase();
+    const colorMap = {
+      js: "text-yellow-400",
+      jsx: "text-cyan-400",
+      ts: "text-blue-500",
+      tsx: "text-cyan-400",
+      py: "text-blue-400",
+      java: "text-red-500",
+      cpp: "text-blue-600",
+      cs: "text-purple-500",
+      php: "text-indigo-400",
+      html: "text-orange-500",
+      htm: "text-orange-500",
+      css: "text-blue-500",
+      scss: "text-pink-500",
+      vue: "text-green-500",
+      json: "text-yellow-500",
+      yaml: "text-red-500",
+      yml: "text-red-500",
+      md: "text-gray-400",
+      sql: "text-blue-500",
+      sh: "text-green-500",
+    };
+    return colorMap[extension] || "text-gray-400";
   };
 
   // ✅ Handle creating a new file
@@ -161,7 +386,9 @@ const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
           </span>
           <span className="mr-1">
             <FiFolder
-              className={`${isExpanded ? "text-yellow-400" : "text-yellow-500"}`}
+              className={`${
+                isExpanded ? "text-yellow-400" : "text-yellow-500"
+              }`}
               size={16}
             />
           </span>
@@ -169,7 +396,7 @@ const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
             {node.name}
           </span>
 
-          {/* ✅ Folder Actions */}
+          {/* Folder Actions */}
           <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={(e) => {
@@ -225,14 +452,14 @@ const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
                 key={file._id}
                 className="flex items-center py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded cursor-pointer group ml-6"
                 onClick={() => onOpenFile(file._id)}>
-                <FiFile className="text-gray-400 mr-2" size={14} />
+                <span className="mr-2">{getFileIcon(file.name)}</span>
                 <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">
                   {file.name}
                 </span>
                 <span className="text-xs text-gray-400 dark:text-gray-500 mr-2">
                   {file.language}
                 </span>
-                {/* ✅ File Actions */}
+                {/* File Actions */}
                 <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={(e) => {
@@ -326,7 +553,7 @@ const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
                   key={file._id}
                   className="flex items-center py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded cursor-pointer group"
                   onClick={() => onOpenFile(file._id)}>
-                  <FiFile className="text-gray-400 mr-2" size={14} />
+                  <span className="mr-2">{getFileIcon(file.name)}</span>
                   <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">
                     {file.name}
                   </span>
