@@ -28,7 +28,6 @@ const WorkspaceEditor = () => {
     openFile,
     closeTab,
     saveFile,
-    autosaveFile,
     updateTabContent,
   } = useWorkspace();
 
@@ -41,23 +40,14 @@ const WorkspaceEditor = () => {
     }
   }, [workspaceId]);
 
-  // Handle content change - mark as unsaved
+  // ✅ Handle content change - ONLY update content, NO autosave
   const handleContentChange = (value) => {
     if (!activeTab) return;
-
-    // Update tab content using the context function
+    // Only update the tab content - mark as unsaved
     updateTabContent(activeTab, value);
-
-    // Autosave if enabled
-    if (user?.settings?.autoSave) {
-      clearTimeout(window._autosaveTimer);
-      window._autosaveTimer = setTimeout(() => {
-        autosaveFile(activeTab, value);
-      }, user.settings.autoSaveDelay || 1000);
-    }
   };
 
-  // Handle save file
+  // ✅ Handle save file
   const handleSaveFile = async (fileId, content) => {
     try {
       const success = await saveFile(fileId, content);
@@ -68,6 +58,21 @@ const WorkspaceEditor = () => {
       return false;
     }
   };
+
+  // ✅ Warn before closing browser with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      const hasUnsaved = openTabs.some((tab) => !tab.isSaved);
+      if (hasUnsaved) {
+        e.preventDefault();
+        e.returnValue =
+          "You have unsaved changes. Are you sure you want to leave?";
+        return e.returnValue;
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [openTabs]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -80,7 +85,19 @@ const WorkspaceEditor = () => {
       // Ctrl+W: Close tab
       if ((e.ctrlKey || e.metaKey) && e.key === "w") {
         e.preventDefault();
-        if (activeTab) closeTab(activeTab);
+        if (activeTab) {
+          const tab = openTabs.find((t) => t.id === activeTab);
+          if (tab && !tab.isSaved) {
+            if (
+              !window.confirm(
+                `"${tab.name}" has unsaved changes. Close anyway?`,
+              )
+            ) {
+              return;
+            }
+          }
+          closeTab(activeTab);
+        }
       }
       // Escape: Close search
       if (e.key === "Escape" && isSearchOpen) {
@@ -95,7 +112,7 @@ const WorkspaceEditor = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeTab, isSearchOpen, isExplorerOpen, closeTab]);
+  }, [activeTab, openTabs, isSearchOpen, isExplorerOpen, closeTab]);
 
   if (loading) {
     return (

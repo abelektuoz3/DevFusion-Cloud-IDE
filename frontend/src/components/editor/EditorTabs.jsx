@@ -22,13 +22,24 @@ const EditorTabs = ({
     onContentChange(value);
   };
 
+  // ✅ Manual Save function - only saves when user clicks or presses Ctrl+S
   const handleSave = async () => {
-    if (!activeTabData) return;
+    if (!activeTabData) {
+      toast.error("No file open to save");
+      return;
+    }
+
+    if (activeTabData.isSaved) {
+      toast.success("File already saved");
+      return;
+    }
 
     setIsSaving(true);
     try {
-      await onSaveFile(activeTab, activeTabData.content);
-      toast.success(`File "${activeTabData.name}" saved!`);
+      const success = await onSaveFile(activeTab, activeTabData.content);
+      if (success) {
+        toast.success(`"${activeTabData.name}" saved successfully! 💾`);
+      }
     } catch (error) {
       toast.error("Failed to save file");
     } finally {
@@ -36,29 +47,44 @@ const EditorTabs = ({
     }
   };
 
-  // Auto-save on Ctrl+S
+  // ✅ Ctrl+S shortcut - Manual save only
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Ctrl+S or Cmd+S
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
-        if (activeTabData && !activeTabData.isSaved) {
-          handleSave();
-        }
+        handleSave();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeTabData]);
 
-  // Auto-save when switching tabs
-  useEffect(() => {
-    return () => {
-      // Save current tab before switching if there are unsaved changes
-      if (activeTabData && !activeTabData.isSaved) {
-        // Don't autosave on tab switch - let the user decide
+  // ✅ Warn before closing tab with unsaved changes
+  const handleCloseTab = (tabId) => {
+    const tab = tabs.find((t) => t.id === tabId);
+    if (tab && !tab.isSaved) {
+      if (!window.confirm(`"${tab.name}" has unsaved changes. Close anyway?`)) {
+        return;
       }
-    };
-  }, [activeTab]);
+    }
+    onCloseTab(tabId);
+  };
+
+  // ✅ Warn before switching tabs with unsaved changes
+  const handleTabChange = (tabId) => {
+    const currentTab = tabs.find((t) => t.id === activeTab);
+    if (currentTab && !currentTab.isSaved) {
+      if (
+        !window.confirm(
+          `"${currentTab.name}" has unsaved changes. Switch anyway?`,
+        )
+      ) {
+        return;
+      }
+    }
+    onTabChange(tabId);
+  };
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-slate-900">
@@ -72,30 +98,17 @@ const EditorTabs = ({
                 "bg-white dark:bg-slate-900 text-gray-900 dark:text-white"
               : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700"
             }`}
-            onClick={() => {
-              // Save current tab before switching if there are unsaved changes
-              if (activeTabData && !activeTabData.isSaved) {
-                // Prompt user to save or just save automatically
-                if (
-                  window.confirm(
-                    `Save changes to "${activeTabData.name}" before switching?`,
-                  )
-                ) {
-                  handleSave();
-                }
-              }
-              onTabChange(tab.id);
-            }}>
+            onClick={() => handleTabChange(tab.id)}>
             <span className="text-sm font-medium whitespace-nowrap">
               {tab.name}
             </span>
             {!tab.isSaved && (
-              <span className="ml-2 text-xs text-yellow-500">●</span>
+              <span className="ml-2 text-xs text-yellow-500 font-bold">●</span>
             )}
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onCloseTab(tab.id);
+                handleCloseTab(tab.id);
               }}
               className="ml-2 p-0.5 hover:bg-gray-200 dark:hover:bg-slate-600 rounded transition opacity-0 group-hover:opacity-100">
               <FiXCircle size={14} />
@@ -113,25 +126,28 @@ const EditorTabs = ({
       <div className="flex-1 relative">
         {activeTabData ?
           <>
-            {/* Save Button in Editor */}
-            <div className="absolute top-2 right-4 z-10 flex items-center space-x-2">
+            {/* ✅ Save Button - Top Right */}
+            <div className="absolute top-3 right-4 z-10 flex items-center space-x-3">
               {!activeTabData.isSaved && (
-                <span className="text-xs text-yellow-500 animate-pulse">
+                <span className="text-xs text-yellow-500 font-medium animate-pulse">
                   ● Unsaved
                 </span>
               )}
               {activeTabData.isSaved && (
-                <span className="text-xs text-green-500">✓ Saved</span>
+                <span className="text-xs text-green-500 font-medium">
+                  ✓ Saved
+                </span>
               )}
               <button
                 onClick={handleSave}
                 disabled={isSaving || activeTabData.isSaved}
-                className={`flex items-center space-x-1 px-3 py-1 text-sm rounded-lg transition ${
+                className={`flex items-center space-x-2 px-4 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                   activeTabData.isSaved ?
-                    "bg-gray-200 dark:bg-slate-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                  : "bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/25"
-                }`}>
-                <FiSave size={14} />
+                    "bg-gray-200 dark:bg-slate-600 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                  : "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/30 hover:shadow-green-600/40"
+                }`}
+                title="Save file (Ctrl+S)">
+                <FiSave size={16} />
                 <span>
                   {isSaving ?
                     "Saving..."
@@ -139,6 +155,9 @@ const EditorTabs = ({
                     "Saved"
                   : "Save"}
                 </span>
+                <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-xs bg-white/20 rounded">
+                  Ctrl+S
+                </kbd>
               </button>
             </div>
 
@@ -169,10 +188,17 @@ const EditorTabs = ({
           </>
         : <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
             <div className="text-center">
-              <div className="text-4xl mb-4">📄</div>
+              <div className="text-5xl mb-4">📄</div>
               <p className="text-lg font-medium">No file open</p>
               <p className="text-sm mt-1">
                 Select a file from the explorer to start editing
+              </p>
+              <p className="text-xs mt-3 text-gray-400 dark:text-gray-500">
+                💡 Tip: Press{" "}
+                <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">
+                  Ctrl+S
+                </kbd>{" "}
+                to save your changes
               </p>
             </div>
           </div>

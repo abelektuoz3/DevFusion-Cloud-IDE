@@ -145,7 +145,6 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
-  // ✅ Update file content
   const updateFile = async (fileId, data) => {
     try {
       const response = await fileAPI.update(fileId, data);
@@ -156,14 +155,14 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
-  // ✅ Save file with proper error handling
+  // ✅ Save file - manual save only
   const saveFile = async (fileId, content) => {
     try {
       console.log("📝 Saving file:", fileId);
       const response = await fileAPI.update(fileId, { content });
       console.log("✅ File saved:", response.data.file);
 
-      // Update the tabs
+      // Update the tabs - mark as saved
       setOpenTabs((prevTabs) =>
         prevTabs.map((tab) =>
           tab.id === fileId ? { ...tab, content, isSaved: true } : tab,
@@ -180,12 +179,11 @@ export const WorkspaceProvider = ({ children }) => {
       return true;
     } catch (error) {
       console.error("❌ Save file error:", error);
-      toast.error("Failed to save file");
       return false;
     }
   };
 
-  // ✅ Update tab content (mark as unsaved)
+  // ✅ Update tab content - mark as unsaved
   const updateTabContent = (tabId, content) => {
     setOpenTabs((prevTabs) =>
       prevTabs.map((tab) =>
@@ -204,7 +202,6 @@ export const WorkspaceProvider = ({ children }) => {
           remaining.length > 0 ? remaining[remaining.length - 1].id : null,
         );
       }
-      // Update files list
       setFiles(files.filter((f) => f._id !== fileId));
       toast.success("File deleted");
       return true;
@@ -215,9 +212,7 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
-  // ✅ Open file with content
   const openFile = async (fileId) => {
-    // Check if already open
     const existing = openTabs.find((tab) => tab.id === fileId);
     if (existing) {
       setActiveTab(fileId);
@@ -255,20 +250,6 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
-  // ✅ Autosave file
-  const autosaveFile = async (fileId, content) => {
-    try {
-      await fileAPI.autosave(fileId, { content });
-      setOpenTabs((prevTabs) =>
-        prevTabs.map((tab) =>
-          tab.id === fileId ? { ...tab, content, isSaved: true } : tab,
-        ),
-      );
-    } catch (error) {
-      console.error("Autosave error:", error);
-    }
-  };
-
   const value = {
     workspaces,
     currentWorkspace,
@@ -291,7 +272,6 @@ export const WorkspaceProvider = ({ children }) => {
     openFile,
     closeTab,
     saveFile,
-    autosaveFile,
     updateTabContent,
   };
 
