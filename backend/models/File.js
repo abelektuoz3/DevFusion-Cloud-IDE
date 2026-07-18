@@ -55,11 +55,12 @@ const fileSchema = new mongoose.Schema(
   },
 );
 
+// ✅ Indexes - REMOVED the problematic text index on content
 fileSchema.index({ workspace: 1, folder: 1, name: 1 }, { unique: true });
 fileSchema.index({ path: 1 });
-fileSchema.index({ content: "text" });
+// ❌ REMOVED: fileSchema.index({ content: "text" });
 
-// ✅ Fixed pre-save middleware with better error handling
+// ✅ Fixed pre-save middleware
 fileSchema.pre("save", async function (next) {
   try {
     // Generate path if it's empty
@@ -77,8 +78,10 @@ fileSchema.pre("save", async function (next) {
       }
     }
 
+    // Update file size
     this.size = Buffer.byteLength(this.content, "utf-8");
 
+    // Detect language from extension
     if (this.isNew || this.isModified("name")) {
       this.language = getLanguageFromExtension(this.name);
     }
