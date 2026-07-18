@@ -1,4 +1,4 @@
-// src/App.jsx - UPDATED
+// frontend/src/App.jsx - Add notifications route
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -10,6 +10,7 @@ import { Toaster } from "react-hot-toast";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { WorkspaceProvider } from "./context/WorkspaceContext";
+import { NotificationProvider } from "./context/NotificationContext"; // ✅ Add this
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -17,6 +18,7 @@ import VerifyOTP from "./pages/VerifyOTP";
 import Dashboard from "./pages/Dashboard";
 import Editor from "./pages/Editor";
 import WorkspaceEditor from "./pages/WorkspaceEditor";
+import Notifications from "./pages/Notifications"; // ✅ Add this
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -104,6 +106,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Notifications />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </>
   );
@@ -114,9 +124,13 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <WorkspaceProvider>
-          <Router>
-            <AppContent />
-          </Router>
+          <NotificationProvider>
+            {" "}
+            {/* ✅ Wrap with NotificationProvider */}
+            <Router>
+              <AppContent />
+            </Router>
+          </NotificationProvider>
         </WorkspaceProvider>
       </AuthProvider>
     </ThemeProvider>
