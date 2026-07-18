@@ -23,25 +23,18 @@ import {
   SiCss3,
   SiReact,
   SiVuedotjs,
-  SiAngular,
-  SiSvelte,
   SiGo,
   SiRust,
   SiRuby,
   SiJson,
-  SiYaml,
   SiMarkdown,
   SiDocker,
   SiNodedotjs,
   SiNpm,
   SiGit,
-  SiLinux,
-  SiApple,
-  SiWindows,
 } from "react-icons/si";
 import {
   FaDatabase,
-  FaFileCode,
   FaFileImage,
   FaFilePdf,
   FaFileArchive,
@@ -75,6 +68,21 @@ const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
   // ✅ Get file icon based on extension
   const getFileIcon = (filename) => {
     const extension = filename.split(".").pop().toLowerCase();
+    const lowerFilename = filename.toLowerCase();
+
+    // Special files
+    if (lowerFilename === "package.json") {
+      return <SiNpm className="text-red-500" size={16} />;
+    }
+    if (lowerFilename === "dockerfile") {
+      return <SiDocker className="text-blue-400" size={16} />;
+    }
+    if (lowerFilename === ".gitignore") {
+      return <SiGit className="text-orange-500" size={16} />;
+    }
+    if (lowerFilename === "readme" || lowerFilename === "readme.md") {
+      return <IoDocumentText className="text-blue-400" size={16} />;
+    }
 
     const iconMap = {
       // JavaScript
@@ -121,12 +129,6 @@ const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
       // Vue
       vue: <SiVuedotjs className="text-green-500" size={16} />,
 
-      // Angular
-      angular: <SiAngular className="text-red-500" size={16} />,
-
-      // Svelte
-      svelte: <SiSvelte className="text-orange-500" size={16} />,
-
       // Go
       go: <SiGo className="text-cyan-500" size={16} />,
 
@@ -139,27 +141,11 @@ const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
       // JSON
       json: <SiJson className="text-yellow-500" size={16} />,
 
-      // YAML
-      yaml: <SiYaml className="text-red-500" size={16} />,
-      yml: <SiYaml className="text-red-500" size={16} />,
-
       // Markdown
       md: <SiMarkdown className="text-gray-400" size={16} />,
 
-      // Docker
-      dockerfile: <SiDocker className="text-blue-400" size={16} />,
-      Dockerfile: <SiDocker className="text-blue-400" size={16} />,
-
       // Node
       node: <SiNodedotjs className="text-green-500" size={16} />,
-
-      // NPM
-      npmrc: <SiNpm className="text-red-500" size={16} />,
-      package: <SiNpm className="text-red-500" size={16} />,
-
-      // Git
-      gitignore: <SiGit className="text-orange-500" size={16} />,
-      git: <SiGit className="text-orange-500" size={16} />,
 
       // Database
       sql: <FaDatabase className="text-blue-500" size={16} />,
@@ -192,73 +178,9 @@ const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
       mp4: <FaFileVideo className="text-purple-400" size={16} />,
       avi: <FaFileVideo className="text-purple-400" size={16} />,
       mov: <FaFileVideo className="text-purple-400" size={16} />,
-
-      // Config files
-      env: <IoDocumentText className="text-gray-400" size={16} />,
-      conf: <IoDocumentText className="text-gray-400" size={16} />,
-      config: <IoDocumentText className="text-gray-400" size={16} />,
-
-      // Shell
-      sh: <SiLinux className="text-green-500" size={16} />,
-      bash: <SiLinux className="text-green-500" size={16} />,
-      zsh: <SiLinux className="text-green-500" size={16} />,
-
-      // Special files
-      readme: <IoDocumentText className="text-blue-400" size={16} />,
-      license: <IoDocumentText className="text-gray-400" size={16} />,
-      changelog: <IoDocumentText className="text-gray-400" size={16} />,
     };
-
-    // Check for special filenames (without extension)
-    const lowerFilename = filename.toLowerCase();
-    if (lowerFilename === "readme" || lowerFilename === "readme.md") {
-      return <IoDocumentText className="text-blue-400" size={16} />;
-    }
-    if (lowerFilename === "license" || lowerFilename === "license.md") {
-      return <IoDocumentText className="text-gray-400" size={16} />;
-    }
-    if (lowerFilename === "package.json") {
-      return <SiNpm className="text-red-500" size={16} />;
-    }
-    if (lowerFilename === "dockerfile") {
-      return <SiDocker className="text-blue-400" size={16} />;
-    }
-    if (lowerFilename === ".gitignore") {
-      return <SiGit className="text-orange-500" size={16} />;
-    }
-    if (lowerFilename === ".env" || lowerFilename === ".env.local") {
-      return <IoDocumentText className="text-gray-400" size={16} />;
-    }
 
     return iconMap[extension] || <FiFile className="text-gray-400" size={16} />;
-  };
-
-  // ✅ Get file icon color for background
-  const getFileIconColor = (filename) => {
-    const extension = filename.split(".").pop().toLowerCase();
-    const colorMap = {
-      js: "text-yellow-400",
-      jsx: "text-cyan-400",
-      ts: "text-blue-500",
-      tsx: "text-cyan-400",
-      py: "text-blue-400",
-      java: "text-red-500",
-      cpp: "text-blue-600",
-      cs: "text-purple-500",
-      php: "text-indigo-400",
-      html: "text-orange-500",
-      htm: "text-orange-500",
-      css: "text-blue-500",
-      scss: "text-pink-500",
-      vue: "text-green-500",
-      json: "text-yellow-500",
-      yaml: "text-red-500",
-      yml: "text-red-500",
-      md: "text-gray-400",
-      sql: "text-blue-500",
-      sh: "text-green-500",
-    };
-    return colorMap[extension] || "text-gray-400";
   };
 
   // ✅ Handle creating a new file
