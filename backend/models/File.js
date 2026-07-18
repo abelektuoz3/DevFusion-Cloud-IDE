@@ -21,7 +21,7 @@ const fileSchema = new mongoose.Schema(
     folder: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Folder",
-      default: null, // ✅ Allow null for root level files
+      default: null,
     },
     workspace: {
       type: mongoose.Schema.Types.ObjectId,
@@ -30,7 +30,7 @@ const fileSchema = new mongoose.Schema(
     },
     path: {
       type: String,
-      required: true,
+      default: "",
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
@@ -59,28 +59,37 @@ fileSchema.index({ workspace: 1, folder: 1, name: 1 }, { unique: true });
 fileSchema.index({ path: 1 });
 fileSchema.index({ content: "text" });
 
+// ✅ Fixed pre-save middleware with better error handling
 fileSchema.pre("save", async function (next) {
-  if (this.isNew && !this.path) {
-    if (this.folder) {
-      const folder = await mongoose.model("Folder").findById(this.folder);
-      if (folder) {
-        this.path = `${folder.path}/${this.name}`;
+  try {
+    // Generate path if it's empty
+    if (!this.path || this.path === "") {
+      if (this.folder) {
+        const folder = await mongoose.model("Folder").findById(this.folder);
+        if (folder) {
+          this.path = `${folder.path}/${this.name}`;
+        } else {
+          this.path = `/${this.name}`;
+        }
       } else {
+        // Root level file
         this.path = `/${this.name}`;
       }
-    } else {
-      // ✅ Root level file
-      this.path = `/${this.name}`;
     }
+
+    this.size = Buffer.byteLength(this.content, "utf-8");
+
+    if (this.isNew || this.isModified("name")) {
+      this.language = getLanguageFromExtension(this.name);
+    }
+
+    next();
+  } catch (error) {
+    console.error("Error in file pre-save middleware:", error);
+    // Fallback: set a default path
+    this.path = `/${this.name}`;
+    next();
   }
-
-  this.size = Buffer.byteLength(this.content, "utf-8");
-
-  if (this.isNew || this.isModified("name")) {
-    this.language = getLanguageFromExtension(this.name);
-  }
-
-  next();
 });
 
 function getLanguageFromExtension(filename) {

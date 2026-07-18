@@ -10,32 +10,79 @@ exports.createFile = async (req, res) => {
     const { name, content = "", folderId } = req.body;
     const workspaceId = req.params.workspaceId;
 
+    console.log("📝 Create file called:");
+    console.log("  - name:", name);
+    console.log("  - folderId:", folderId);
+    console.log("  - workspaceId:", workspaceId);
+
+    // Validate name
+    if (!name || name.trim() === "") {
+      return res.status(400).json({ message: "File name is required" });
+    }
+
     // Check if file already exists
     const existingFile = await File.findOne({
       workspace: workspaceId,
       folder: folderId || null,
-      name,
+      name: name.trim(),
     });
 
     if (existingFile) {
       return res.status(400).json({ message: "File already exists" });
     }
 
-    const file = await File.create({
-      name,
-      content,
+    // ✅ Create file with explicit path handling
+    const fileData = {
+      name: name.trim(),
+      content: content || "",
       folder: folderId || null,
       workspace: workspaceId,
       owner: req.user._id,
-    });
+    };
+
+    // If folder exists, get its path for the file path
+    if (folderId) {
+      const folder = await Folder.findById(folderId);
+      if (folder) {
+        fileData.path = `${folder.path}/${name.trim()}`;
+      } else {
+        fileData.path = `/${name.trim()}`;
+      }
+    } else {
+      // Root level file
+      fileData.path = `/${name.trim()}`;
+    }
+
+    const file = new File(fileData);
+    await file.save();
+
+    console.log("✅ File created:", file._id);
 
     res.status(201).json({
       message: "File created successfully",
       file,
     });
   } catch (error) {
-    console.error("Create file error:", error);
-    res.status(500).json({ message: "Failed to create file" });
+    console.error("❌ Create file error:", error);
+    console.error("❌ Error stack:", error.stack);
+
+    // Handle validation errors
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((err) => err.message);
+      return res.status(400).json({ message: errors.join(", ") });
+    }
+
+    // Handle duplicate key error
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message: "A file with this name already exists in this location",
+      });
+    }
+
+    res.status(500).json({
+      message: "Failed to create file",
+      error: error.message,
+    });
   }
 };
 
