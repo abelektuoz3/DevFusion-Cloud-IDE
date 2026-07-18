@@ -1,4 +1,4 @@
-// src/pages/WorkspaceEditor.jsx
+// frontend/src/pages/WorkspaceEditor.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FiArrowLeft, FiMenu, FiXCircle, FiFolder } from "react-icons/fi";
@@ -9,6 +9,7 @@ import Explorer from "../components/explorer/Explorer";
 import EditorTabs from "../components/editor/EditorTabs";
 import StatusBar from "../components/editor/StatusBar";
 import SearchOverlay from "../components/search/SearchOverlay";
+import toast from "react-hot-toast";
 
 const WorkspaceEditor = () => {
   const { workspaceId } = useParams();
@@ -28,6 +29,7 @@ const WorkspaceEditor = () => {
     closeTab,
     saveFile,
     autosaveFile,
+    updateTabContent,
   } = useWorkspace();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -39,19 +41,37 @@ const WorkspaceEditor = () => {
     }
   }, [workspaceId]);
 
+  // Handle content change - mark as unsaved
+  const handleContentChange = (value) => {
+    if (!activeTab) return;
+
+    // Update tab content using the context function
+    updateTabContent(activeTab, value);
+
+    // Autosave if enabled
+    if (user?.settings?.autoSave) {
+      clearTimeout(window._autosaveTimer);
+      window._autosaveTimer = setTimeout(() => {
+        autosaveFile(activeTab, value);
+      }, user.settings.autoSaveDelay || 1000);
+    }
+  };
+
+  // Handle save file
+  const handleSaveFile = async (fileId, content) => {
+    try {
+      const success = await saveFile(fileId, content);
+      return success;
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Failed to save file");
+      return false;
+    }
+  };
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl+S: Save
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        if (activeTab) {
-          const tab = openTabs.find((t) => t.id === activeTab);
-          if (tab && !tab.isSaved) {
-            saveFile(activeTab, tab.content);
-          }
-        }
-      }
       // Ctrl+F: Search
       if ((e.ctrlKey || e.metaKey) && e.key === "f") {
         e.preventDefault();
@@ -75,23 +95,7 @@ const WorkspaceEditor = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeTab, openTabs, isSearchOpen, isExplorerOpen]);
-
-  const handleContentChange = (value) => {
-    if (!activeTab) return;
-
-    // Update tab content
-    const tab = openTabs.find((t) => t.id === activeTab);
-    if (tab) {
-      const newTab = { ...tab, content: value, isSaved: false };
-      const updatedTabs = openTabs.map((t) =>
-        t.id === activeTab ? newTab : t,
-      );
-      // Update through context - we need to add this
-      // For now, we'll use a direct update
-      window._updateTabContent(activeTab, value);
-    }
-  };
+  }, [activeTab, isSearchOpen, isExplorerOpen, closeTab]);
 
   if (loading) {
     return (
@@ -183,7 +187,7 @@ const WorkspaceEditor = () => {
             onCloseTab={closeTab}
             onTabChange={setActiveTab}
             onContentChange={handleContentChange}
-            onSaveFile={saveFile}
+            onSaveFile={handleSaveFile}
           />
         </div>
       </div>

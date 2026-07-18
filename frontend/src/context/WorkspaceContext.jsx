@@ -56,19 +56,14 @@ export const WorkspaceProvider = ({ children }) => {
   const createWorkspace = async (data) => {
     try {
       setLoading(true);
-      console.log("Creating workspace with data:", data);
       const response = await workspaceAPI.create(data);
-      console.log("Workspace created response:", response.data);
       const newWorkspace = response.data.workspace;
       setWorkspaces([newWorkspace, ...workspaces]);
       toast.success(`Workspace "${newWorkspace.name}" created!`);
       return newWorkspace;
     } catch (error) {
       console.error("Create workspace error:", error);
-      console.error("Error response:", error.response?.data);
-      const errorMessage =
-        error.response?.data?.message || "Failed to create workspace";
-      toast.error(errorMessage);
+      toast.error("Failed to create workspace");
       return null;
     } finally {
       setLoading(false);
@@ -102,6 +97,8 @@ export const WorkspaceProvider = ({ children }) => {
         setCurrentWorkspace(null);
         setFolderTree(null);
         setFiles([]);
+        setOpenTabs([]);
+        setActiveTab(null);
       }
       toast.success("Workspace deleted");
       return true;
@@ -148,6 +145,7 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
+  // ✅ Update file content
   const updateFile = async (fileId, data) => {
     try {
       const response = await fileAPI.update(fileId, data);
@@ -156,6 +154,44 @@ export const WorkspaceProvider = ({ children }) => {
       console.error("Update file error:", error);
       return null;
     }
+  };
+
+  // ✅ Save file with proper error handling
+  const saveFile = async (fileId, content) => {
+    try {
+      console.log("📝 Saving file:", fileId);
+      const response = await fileAPI.update(fileId, { content });
+      console.log("✅ File saved:", response.data.file);
+
+      // Update the tabs
+      setOpenTabs((prevTabs) =>
+        prevTabs.map((tab) =>
+          tab.id === fileId ? { ...tab, content, isSaved: true } : tab,
+        ),
+      );
+
+      // Update the files list
+      setFiles((prevFiles) =>
+        prevFiles.map((file) =>
+          file._id === fileId ? { ...file, content, isSaved: true } : file,
+        ),
+      );
+
+      return true;
+    } catch (error) {
+      console.error("❌ Save file error:", error);
+      toast.error("Failed to save file");
+      return false;
+    }
+  };
+
+  // ✅ Update tab content (mark as unsaved)
+  const updateTabContent = (tabId, content) => {
+    setOpenTabs((prevTabs) =>
+      prevTabs.map((tab) =>
+        tab.id === tabId ? { ...tab, content, isSaved: false } : tab,
+      ),
+    );
   };
 
   const deleteFile = async (fileId) => {
@@ -168,6 +204,8 @@ export const WorkspaceProvider = ({ children }) => {
           remaining.length > 0 ? remaining[remaining.length - 1].id : null,
         );
       }
+      // Update files list
+      setFiles(files.filter((f) => f._id !== fileId));
       toast.success("File deleted");
       return true;
     } catch (error) {
@@ -177,7 +215,9 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
+  // ✅ Open file with content
   const openFile = async (fileId) => {
+    // Check if already open
     const existing = openTabs.find((tab) => tab.id === fileId);
     if (existing) {
       setActiveTab(fileId);
@@ -192,7 +232,7 @@ export const WorkspaceProvider = ({ children }) => {
         name: file.name,
         path: file.path,
         language: file.language,
-        content: file.content,
+        content: file.content || "",
         isSaved: true,
       };
       setOpenTabs([...openTabs, newTab]);
@@ -215,24 +255,15 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
-  const saveFile = async (fileId, content) => {
-    try {
-      await fileAPI.update(fileId, { content });
-      setOpenTabs(
-        openTabs.map((tab) =>
-          tab.id === fileId ? { ...tab, content, isSaved: true } : tab,
-        ),
-      );
-      return true;
-    } catch (error) {
-      console.error("Save file error:", error);
-      return false;
-    }
-  };
-
+  // ✅ Autosave file
   const autosaveFile = async (fileId, content) => {
     try {
       await fileAPI.autosave(fileId, { content });
+      setOpenTabs((prevTabs) =>
+        prevTabs.map((tab) =>
+          tab.id === fileId ? { ...tab, content, isSaved: true } : tab,
+        ),
+      );
     } catch (error) {
       console.error("Autosave error:", error);
     }
@@ -261,6 +292,7 @@ export const WorkspaceProvider = ({ children }) => {
     closeTab,
     saveFile,
     autosaveFile,
+    updateTabContent,
   };
 
   return (
