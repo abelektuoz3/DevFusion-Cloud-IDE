@@ -11,15 +11,33 @@ import {
   FiEdit2,
   FiTrash2,
 } from "react-icons/fi";
+import { IoLogoJavascript, IoLogoPython, IoLogoReact } from "react-icons/io5";
 import {
-  FaFileCode,
+  SiTypescript,
+  SiJava,
+  SiCplusplus,
+  SiPhp,
+  SiHtml5,
+  SiCss3,
+  SiVuedotjs,
+  SiGo,
+  SiRust,
+  SiRuby,
+  SiJson,
+  SiMarkdown,
+  SiDocker,
+  SiNodedotjs,
+  SiNpm,
+  SiGit,
+} from "react-icons/si";
+import {
+  FaDatabase,
   FaFileImage,
   FaFilePdf,
   FaFileArchive,
   FaFileAudio,
   FaFileVideo,
-  FaDatabase,
-  FaPhp,
+  FaFileCode,
 } from "react-icons/fa";
 import { IoDocumentText } from "react-icons/io5";
 import toast from "react-hot-toast";
@@ -45,50 +63,91 @@ const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
     setExpandedFolders(newSet);
   };
 
-  // ✅ Get file icon based on extension - simplified with only working icons
+  // ✅ Get file icon based on extension - using reliable icons
   const getFileIcon = (filename) => {
     const extension = filename.split(".").pop().toLowerCase();
     const lowerFilename = filename.toLowerCase();
 
     // Special files
     if (lowerFilename === "package.json") {
-      return <IoDocumentText className="text-red-400" size={16} />;
+      return <SiNpm className="text-red-500" size={16} />;
     }
     if (lowerFilename === "dockerfile") {
-      return <IoDocumentText className="text-blue-400" size={16} />;
+      return <SiDocker className="text-blue-400" size={16} />;
     }
     if (lowerFilename === ".gitignore") {
-      return <IoDocumentText className="text-orange-400" size={16} />;
+      return <SiGit className="text-orange-500" size={16} />;
     }
     if (lowerFilename === "readme" || lowerFilename === "readme.md") {
-      return <IoDocumentText className="text-blue-400" size={16} />;
+      return <SiMarkdown className="text-blue-400" size={16} />;
     }
 
-    // Extension based icons
     const iconMap = {
-      // Code files
-      js: <FaFileCode className="text-yellow-400" size={16} />,
-      jsx: <FaFileCode className="text-cyan-400" size={16} />,
-      ts: <FaFileCode className="text-blue-400" size={16} />,
-      tsx: <FaFileCode className="text-cyan-400" size={16} />,
-      py: <FaFileCode className="text-blue-400" size={16} />,
-      java: <FaFileCode className="text-red-400" size={16} />,
-      cpp: <FaFileCode className="text-purple-400" size={16} />,
-      c: <FaFileCode className="text-purple-400" size={16} />,
-      h: <FaFileCode className="text-purple-400" size={16} />,
-      hpp: <FaFileCode className="text-purple-400" size={16} />,
-      cs: <FaFileCode className="text-purple-400" size={16} />,
-      php: <FaPhp className="text-indigo-400" size={16} />,
-      html: <FaFileCode className="text-orange-400" size={16} />,
-      htm: <FaFileCode className="text-orange-400" size={16} />,
-      css: <FaFileCode className="text-blue-400" size={16} />,
-      scss: <FaFileCode className="text-pink-400" size={16} />,
-      vue: <FaFileCode className="text-green-400" size={16} />,
-      go: <FaFileCode className="text-cyan-400" size={16} />,
-      rs: <FaFileCode className="text-orange-400" size={16} />,
-      rb: <FaFileCode className="text-red-400" size={16} />,
-      json: <FaFileCode className="text-yellow-400" size={16} />,
-      sql: <FaDatabase className="text-blue-400" size={16} />,
+      // JavaScript
+      js: <IoLogoJavascript className="text-yellow-400" size={16} />,
+      jsx: <IoLogoReact className="text-cyan-400" size={16} />,
+      mjs: <IoLogoJavascript className="text-yellow-400" size={16} />,
+
+      // TypeScript
+      ts: <SiTypescript className="text-blue-500" size={16} />,
+      tsx: <IoLogoReact className="text-cyan-400" size={16} />,
+
+      // Python
+      py: <IoLogoPython className="text-blue-400" size={16} />,
+
+      // Java
+      java: <SiJava className="text-red-500" size={16} />,
+
+      // C++
+      cpp: <SiCplusplus className="text-blue-600" size={16} />,
+      c: <SiCplusplus className="text-blue-600" size={16} />,
+      h: <SiCplusplus className="text-blue-600" size={16} />,
+      hpp: <SiCplusplus className="text-blue-600" size={16} />,
+
+      // C#
+      cs: <FaFileCode className="text-purple-500" size={16} />,
+
+      // PHP
+      php: <SiPhp className="text-indigo-400" size={16} />,
+
+      // HTML
+      html: <SiHtml5 className="text-orange-500" size={16} />,
+      htm: <SiHtml5 className="text-orange-500" size={16} />,
+
+      // CSS
+      css: <SiCss3 className="text-blue-500" size={16} />,
+      scss: <SiCss3 className="text-pink-500" size={16} />,
+      sass: <SiCss3 className="text-pink-500" size={16} />,
+      less: <SiCss3 className="text-blue-400" size={16} />,
+
+      // React
+      jsx: <IoLogoReact className="text-cyan-400" size={16} />,
+      tsx: <IoLogoReact className="text-cyan-400" size={16} />,
+
+      // Vue
+      vue: <SiVuedotjs className="text-green-500" size={16} />,
+
+      // Go
+      go: <SiGo className="text-cyan-500" size={16} />,
+
+      // Rust
+      rs: <SiRust className="text-orange-600" size={16} />,
+
+      // Ruby
+      rb: <SiRuby className="text-red-600" size={16} />,
+
+      // JSON
+      json: <SiJson className="text-yellow-500" size={16} />,
+
+      // Markdown
+      md: <SiMarkdown className="text-gray-400" size={16} />,
+
+      // Node
+      node: <SiNodedotjs className="text-green-500" size={16} />,
+
+      // Database
+      sql: <FaDatabase className="text-blue-500" size={16} />,
+      db: <FaDatabase className="text-blue-500" size={16} />,
 
       // Images
       png: <FaFileImage className="text-purple-400" size={16} />,
@@ -99,16 +158,14 @@ const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
       webp: <FaFileImage className="text-purple-400" size={16} />,
       ico: <FaFileImage className="text-purple-400" size={16} />,
 
-      // Documents
-      pdf: <FaFilePdf className="text-red-400" size={16} />,
-      md: <IoDocumentText className="text-gray-400" size={16} />,
-      txt: <IoDocumentText className="text-gray-400" size={16} />,
+      // PDF
+      pdf: <FaFilePdf className="text-red-500" size={16} />,
 
-      // Archives
-      zip: <FaFileArchive className="text-yellow-400" size={16} />,
-      rar: <FaFileArchive className="text-yellow-400" size={16} />,
-      tar: <FaFileArchive className="text-yellow-400" size={16} />,
-      gz: <FaFileArchive className="text-yellow-400" size={16} />,
+      // Archive
+      zip: <FaFileArchive className="text-yellow-500" size={16} />,
+      rar: <FaFileArchive className="text-yellow-500" size={16} />,
+      tar: <FaFileArchive className="text-yellow-500" size={16} />,
+      gz: <FaFileArchive className="text-yellow-500" size={16} />,
 
       // Audio
       mp3: <FaFileAudio className="text-green-400" size={16} />,
