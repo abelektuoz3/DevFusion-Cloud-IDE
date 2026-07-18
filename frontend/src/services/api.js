@@ -35,7 +35,7 @@ api.interceptors.response.use(
   },
 );
 
-// Auth API
+// ==================== AUTH API ====================
 export const authAPI = {
   register: (data) => api.post("/auth/register", data),
   login: (data) => api.post("/auth/login", data),
@@ -43,7 +43,7 @@ export const authAPI = {
   updateProfile: (data) => api.put("/auth/profile", data),
 };
 
-// Workspace API
+// ==================== WORKSPACE API ====================
 export const workspaceAPI = {
   create: (data) => api.post("/workspaces", data),
   getAll: () => api.get("/workspaces"),
@@ -52,32 +52,33 @@ export const workspaceAPI = {
   delete: (id) => api.delete(`/workspaces/${id}`),
 };
 
-// Folder API
+// ==================== FOLDER API ====================
 export const folderAPI = {
   create: (workspaceId, data) => api.post(`/folders/${workspaceId}`, data),
   getById: (id) => api.get(`/folders/${id}`),
   update: (id, data) => api.put(`/folders/${id}`, data),
+  rename: (id, data) => api.patch(`/folders/${id}/rename`, data), // ✅ Added
   delete: (id) => api.delete(`/folders/${id}`),
 };
 
-// File API
+// ==================== FILE API ====================
 export const fileAPI = {
   create: (workspaceId, data) => api.post(`/files/${workspaceId}`, data),
   getById: (id) => api.get(`/files/${id}`),
   update: (id, data) => api.put(`/files/${id}`, data),
-  rename: (id, data) => api.patch(`/files/${id}/rename`, data),
+  rename: (id, data) => api.patch(`/files/${id}/rename`, data), // ✅ Added
   delete: (id) => api.delete(`/files/${id}`),
   autosave: (id, data) => api.post(`/files/${id}/autosave`, data),
 };
 
-// Settings API
+// ==================== SETTINGS API ====================
 export const settingsAPI = {
   get: () => api.get("/settings"),
   update: (data) => api.put("/settings", data),
   updateTheme: (theme) => api.patch("/settings/theme", { theme }),
 };
 
-// Notification API
+// ==================== NOTIFICATION API ====================
 export const notificationAPI = {
   get: (params) => api.get("/notifications", { params }),
   markAsRead: (id) => api.put(`/notifications/${id}/read`),
@@ -85,7 +86,7 @@ export const notificationAPI = {
   delete: (id) => api.delete(`/notifications/${id}`),
 };
 
-// Search API
+// ==================== SEARCH API ====================
 export const searchAPI = {
   search: (query, workspaceId) =>
     api.get("/search", { params: { q: query, workspaceId } }),

@@ -1,4 +1,4 @@
-// routes/folders.js
+// backend/routes/folders.js
 const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/auth");
@@ -13,6 +13,7 @@ router.post(
 );
 router.get("/:id", protect, folderController.getFolder);
 router.put("/:id", protect, folderController.updateFolder);
+router.patch("/:id/rename", protect, folderController.renameFolder); // ✅ Add rename route
 router.delete("/:id", protect, folderController.deleteFolder);
 
 module.exports = router;

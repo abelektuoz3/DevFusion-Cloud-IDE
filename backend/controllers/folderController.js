@@ -10,7 +10,6 @@ exports.createFolder = async (req, res) => {
     const { name, parentFolderId } = req.body;
     const workspaceId = req.params.workspaceId;
 
-    // Check if folder already exists
     const existingFolder = await Folder.findOne({
       workspace: workspaceId,
       parentFolder: parentFolderId || null,
@@ -95,6 +94,53 @@ exports.updateFolder = async (req, res) => {
   }
 };
 
+// ✅ @desc    Rename folder
+// @route   PATCH /api/folders/:id/rename
+// @access  Private
+exports.renameFolder = async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    if (!name || name.trim() === "") {
+      return res.status(400).json({ message: "Folder name is required" });
+    }
+
+    const folder = await Folder.findById(req.params.id);
+    if (!folder) {
+      return res.status(404).json({ message: "Folder not found" });
+    }
+
+    if (folder.owner.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    // Check if another folder with same name exists in same parent
+    const existingFolder = await Folder.findOne({
+      workspace: folder.workspace,
+      parentFolder: folder.parentFolder,
+      name: name.trim(),
+      _id: { $ne: folder._id },
+    });
+
+    if (existingFolder) {
+      return res
+        .status(400)
+        .json({ message: "A folder with this name already exists" });
+    }
+
+    folder.name = name.trim();
+    await folder.save();
+
+    res.json({
+      message: "Folder renamed successfully",
+      folder,
+    });
+  } catch (error) {
+    console.error("Rename folder error:", error);
+    res.status(500).json({ message: "Failed to rename folder" });
+  }
+};
+
 // @desc    Delete folder
 // @route   DELETE /api/folders/:id
 // @access  Private
@@ -109,16 +155,12 @@ exports.deleteFolder = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // Delete all files in this folder
     await File.deleteMany({ folder: folder._id });
-
-    // Delete all subfolders recursively
     const children = await Folder.find({ parentFolder: folder._id });
     for (const child of children) {
       await File.deleteMany({ folder: child._id });
       await child.deleteOne();
     }
-
     await folder.deleteOne();
 
     res.json({ message: "Folder deleted successfully" });

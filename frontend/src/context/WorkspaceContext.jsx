@@ -109,6 +109,8 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
+  // ==================== FOLDER OPERATIONS ====================
+
   const createFolder = async (workspaceId, data) => {
     try {
       const response = await folderAPI.create(workspaceId, data);
@@ -116,11 +118,25 @@ export const WorkspaceProvider = ({ children }) => {
       return response.data.folder;
     } catch (error) {
       console.error("Create folder error:", error);
-      toast.error("Failed to create folder");
+      toast.error(error.response?.data?.message || "Failed to create folder");
       return null;
     }
   };
 
+  // ✅ Rename folder
+  const renameFolder = async (folderId, newName) => {
+    try {
+      const response = await folderAPI.rename(folderId, { name: newName });
+      toast.success(`Folder renamed to "${newName}"`);
+      return true;
+    } catch (error) {
+      console.error("Rename folder error:", error);
+      toast.error(error.response?.data?.message || "Failed to rename folder");
+      return false;
+    }
+  };
+
+  // ✅ Delete folder
   const deleteFolder = async (folderId) => {
     try {
       await folderAPI.delete(folderId);
@@ -133,6 +149,8 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
+  // ==================== FILE OPERATIONS ====================
+
   const createFile = async (workspaceId, data) => {
     try {
       const response = await fileAPI.create(workspaceId, data);
@@ -140,7 +158,7 @@ export const WorkspaceProvider = ({ children }) => {
       return response.data.file;
     } catch (error) {
       console.error("Create file error:", error);
-      toast.error("Failed to create file");
+      toast.error(error.response?.data?.message || "Failed to create file");
       return null;
     }
   };
@@ -176,9 +194,11 @@ export const WorkspaceProvider = ({ children }) => {
         ),
       );
 
+      toast.success("File saved! 💾");
       return true;
     } catch (error) {
       console.error("❌ Save file error:", error);
+      toast.error("Failed to save file");
       return false;
     }
   };
@@ -192,6 +212,32 @@ export const WorkspaceProvider = ({ children }) => {
     );
   };
 
+  // ✅ Rename file
+  const renameFile = async (fileId, newName) => {
+    try {
+      const response = await fileAPI.rename(fileId, { name: newName });
+      // Update open tabs
+      setOpenTabs((prevTabs) =>
+        prevTabs.map((tab) =>
+          tab.id === fileId ? { ...tab, name: newName } : tab,
+        ),
+      );
+      // Update files list
+      setFiles((prevFiles) =>
+        prevFiles.map((file) =>
+          file._id === fileId ? { ...file, name: newName } : file,
+        ),
+      );
+      toast.success(`File renamed to "${newName}"`);
+      return true;
+    } catch (error) {
+      console.error("Rename file error:", error);
+      toast.error(error.response?.data?.message || "Failed to rename file");
+      return false;
+    }
+  };
+
+  // ✅ Delete file
   const deleteFile = async (fileId) => {
     try {
       await fileAPI.delete(fileId);
@@ -211,6 +257,8 @@ export const WorkspaceProvider = ({ children }) => {
       return false;
     }
   };
+
+  // ==================== TAB OPERATIONS ====================
 
   const openFile = async (fileId) => {
     const existing = openTabs.find((tab) => tab.id === fileId);
@@ -251,6 +299,7 @@ export const WorkspaceProvider = ({ children }) => {
   };
 
   const value = {
+    // State
     workspaces,
     currentWorkspace,
     folderTree,
@@ -259,20 +308,30 @@ export const WorkspaceProvider = ({ children }) => {
     openTabs,
     activeTab,
     setActiveTab,
+
+    // Workspace operations
     loadWorkspaces,
     loadWorkspace,
     createWorkspace,
     updateWorkspace,
     deleteWorkspace,
+
+    // Folder operations
     createFolder,
+    renameFolder,
     deleteFolder,
+
+    // File operations
     createFile,
     updateFile,
+    saveFile,
+    renameFile,
     deleteFile,
+    updateTabContent,
+
+    // Tab operations
     openFile,
     closeTab,
-    saveFile,
-    updateTabContent,
   };
 
   return (
