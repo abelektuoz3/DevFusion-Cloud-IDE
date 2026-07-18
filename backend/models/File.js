@@ -55,12 +55,11 @@ const fileSchema = new mongoose.Schema(
   },
 );
 
-// ✅ Indexes - REMOVED the problematic text index on content
+// ✅ Clean indexes - NO text index
 fileSchema.index({ workspace: 1, folder: 1, name: 1 }, { unique: true });
 fileSchema.index({ path: 1 });
-// ❌ REMOVED: fileSchema.index({ content: "text" });
 
-// ✅ Fixed pre-save middleware
+// ✅ Pre-save middleware
 fileSchema.pre("save", async function (next) {
   try {
     // Generate path if it's empty
@@ -89,7 +88,6 @@ fileSchema.pre("save", async function (next) {
     next();
   } catch (error) {
     console.error("Error in file pre-save middleware:", error);
-    // Fallback: set a default path
     this.path = `/${this.name}`;
     next();
   }
