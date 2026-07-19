@@ -11,6 +11,9 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  // ✅ Debug log to check user state
+  console.log("🔍 Navbar - User:", user?.username || "No user");
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
@@ -32,6 +35,9 @@ const Navbar = () => {
     }
     setIsOpen(false);
   };
+
+  // ✅ Always show bell when user is logged in
+  const isLoggedIn = user !== null && user !== undefined;
 
   return (
     <nav
@@ -63,7 +69,8 @@ const Navbar = () => {
               How It Works
             </button>
 
-            {user ?
+            {/* ✅ Show bell if logged in */}
+            {isLoggedIn && (
               <>
                 <Link
                   to="/dashboard"
@@ -71,11 +78,12 @@ const Navbar = () => {
                   Dashboard
                 </Link>
 
-                {/* ✅ Bell Icon - Direct Link with visible styling */}
+                {/* ✅ Bell Icon - Always visible when logged in */}
                 <Link
                   to="/notifications"
-                  className="flex items-center space-x-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-                  title="Notifications">
+                  className="flex items-center space-x-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors border-2 border-red-500"
+                  title="Notifications"
+                  style={{ border: "2px solid red" }}>
                   <FiBell className="text-gray-600 dark:text-gray-300 text-xl" />
                   <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
                     3
@@ -89,7 +97,10 @@ const Navbar = () => {
                   <span>Logout</span>
                 </button>
               </>
-            : <>
+            )}
+
+            {!isLoggedIn && (
+              <>
                 <Link
                   to="/login"
                   className="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition">
@@ -101,13 +112,13 @@ const Navbar = () => {
                   Get Started
                 </Link>
               </>
-            }
+            )}
 
             <DarkModeToggle />
           </div>
 
           <div className="md:hidden flex items-center space-x-2">
-            {user && (
+            {isLoggedIn && (
               <Link
                 to="/notifications"
                 className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
@@ -142,7 +153,7 @@ const Navbar = () => {
               className="block w-full text-left px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition font-medium">
               How It Works
             </button>
-            {user ?
+            {isLoggedIn ?
               <>
                 <Link
                   to="/dashboard"
