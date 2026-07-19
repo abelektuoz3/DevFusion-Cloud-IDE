@@ -2,7 +2,6 @@
 import React from "react";
 import {
   FiSettings,
-  FiPalette,
   FiEdit,
   FiFile,
   FiTerminal,
@@ -12,12 +11,12 @@ import {
   FiInfo,
   FiSearch,
 } from "react-icons/fi";
-import { IoKeyOutline } from "react-icons/io5";
+import { IoKeyOutline, IoColorPaletteOutline } from "react-icons/io5";
 import { BsBoxSeam, BsGit } from "react-icons/bs";
 
 const menuItems = [
   { id: "general", label: "General", icon: FiSettings },
-  { id: "appearance", label: "Appearance", icon: FiPalette },
+  { id: "appearance", label: "Appearance", icon: IoColorPaletteOutline },
   { id: "editor", label: "Editor", icon: FiEdit },
   { id: "files", label: "Files", icon: FiFile },
   { id: "terminal", label: "Terminal", icon: FiTerminal },
