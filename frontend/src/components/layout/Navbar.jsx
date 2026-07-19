@@ -1,16 +1,14 @@
 // frontend/src/components/layout/Navbar.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FiCode, FiMenu, FiX, FiLogOut, FiBell } from "react-icons/fi";
+import { FiCode, FiMenu, FiX, FiLogOut } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
-import { useNotifications } from "../../context/NotificationContext";
 import DarkModeToggle from "../ui/DarkModeToggle";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { user, logout } = useAuth();
-  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
 
   // ✅ Debug log to check user state
@@ -80,19 +78,6 @@ const Navbar = () => {
                   Dashboard
                 </Link>
 
-                {/* ✅ Bell Icon - Always visible when logged in */}
-                <Link
-                  to="/notifications"
-                  className="relative flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-                  title="Notifications">
-                  <FiBell className="text-gray-600 dark:text-gray-300 text-xl" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                      {unreadCount > 99 ? "99+" : unreadCount}
-                    </span>
-                  )}
-                </Link>
-
                 <button
                   onClick={handleLogout}
                   className="flex items-center space-x-1.5 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 transition">
@@ -121,19 +106,6 @@ const Navbar = () => {
           </div>
 
           <div className="md:hidden flex items-center space-x-2">
-            {isLoggedIn && (
-              <Link
-              to="/notifications"
-              className="relative flex items-center px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-              title="Notifications">
-              <FiBell className="text-gray-600 dark:text-gray-300 text-xl" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
-              )}
-            </Link>
-            )}
             <DarkModeToggle />
             <button
               className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition"
