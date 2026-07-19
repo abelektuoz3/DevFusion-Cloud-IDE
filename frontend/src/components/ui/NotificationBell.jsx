@@ -11,7 +11,11 @@ const NotificationBell = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // ✅ Only use notifications if user is authenticated
+  // ✅ Debug logs
+  console.log("🔔 NotificationBell rendering");
+  console.log("🔔 User:", user?.username || "No user");
+
+  // ✅ Get notifications context
   let notifications = [];
   let unreadCount = 0;
   let markAsRead = () => {};
@@ -21,14 +25,18 @@ const NotificationBell = () => {
     notifications = context.notifications || [];
     unreadCount = context.unreadCount || 0;
     markAsRead = context.markAsRead || (() => {});
+    console.log("✅ Notifications loaded:", notifications.length);
   } catch (error) {
-    console.warn("Notification context not available");
+    console.warn("❌ Notification context not available:", error);
   }
 
   // ✅ Don't render if user is not authenticated
   if (!user) {
+    console.log("⏳ No user, hiding bell");
     return null;
   }
+
+  console.log("🔔 Rendering bell with", unreadCount, "unread notifications");
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -41,6 +49,7 @@ const NotificationBell = () => {
   }, []);
 
   const handleBellClick = () => {
+    console.log("🔔 Bell clicked");
     setIsOpen(!isOpen);
   };
 
