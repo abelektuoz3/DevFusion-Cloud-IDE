@@ -9,6 +9,9 @@ const NotificationBell = () => {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
+  // ✅ Debug log to verify component renders
+  console.log("🔔 NotificationBell rendering");
+
   // ✅ Add error handling for context
   let notifications = [];
   let unreadCount = 0;
@@ -19,8 +22,9 @@ const NotificationBell = () => {
     notifications = context.notifications || [];
     unreadCount = context.unreadCount || 0;
     markAsRead = context.markAsRead || (() => {});
+    console.log("✅ Notifications loaded:", notifications.length);
   } catch (error) {
-    console.warn("Notification context not available");
+    console.warn("❌ Notification context not available:", error);
   }
 
   useEffect(() => {
@@ -34,6 +38,7 @@ const NotificationBell = () => {
   }, []);
 
   const handleBellClick = () => {
+    console.log("🔔 Bell clicked");
     setIsOpen(!isOpen);
   };
 
