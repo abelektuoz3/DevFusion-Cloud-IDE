@@ -18,6 +18,39 @@ const app = express();
 // Enable trust proxy for Render
 app.set("trust proxy", 1);
 
+// CORS - Setup early so preflights and rate-limited requests get proper headers
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "https://dev-fusion-cloud-ide.vercel.app",
+  "https://devfusion-cloud-ide.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://localhost:5000",
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      
+      const normalizedOrigin = origin.toLowerCase().trim();
+      const isAllowed = allowedOrigins.some(o => o.toLowerCase().trim() === normalizedOrigin) ||
+                        normalizedOrigin.endsWith(".vercel.app") ||
+                        normalizedOrigin.startsWith("http://localhost:");
+      
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        console.log("Blocked origin:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
+
 // Security middleware
 app.use(
   helmet({
@@ -37,33 +70,6 @@ app.use("/api", limiter);
 
 // Compression
 app.use(compression());
-
-// CORS
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  "https://dev-fusion-cloud-ide.vercel.app",
-  "https://devfusion-cloud-ide.vercel.app",
-  "http://localhost:3000",
-  "http://localhost:5173",
-  "http://localhost:5000",
-].filter(Boolean);
-
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        console.log("Blocked origin:", origin);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  }),
-);
 
 // Body parser middleware
 app.use(express.json({ limit: "50mb" }));
