@@ -6,8 +6,6 @@ import { useNotifications } from "../context/NotificationContext";
 import { useTheme } from "../context/ThemeContext";
 import {
   FiArrowLeft,
-  FiCheck,
-  FiCheckCircle,
   FiTrash2,
   FiBell,
   FiBellOff,
@@ -25,16 +23,26 @@ const Notifications = () => {
     loading,
     hasMore,
     loadNotifications,
-    markAsRead,
     markAllAsRead,
     deleteNotification,
   } = useNotifications();
 
   const [selectedNotifications, setSelectedNotifications] = useState([]);
 
+  // Load notifications then auto-mark all as read
   useEffect(() => {
-    loadNotifications(true);
+    const loadAndMarkRead = async () => {
+      await loadNotifications(true);
+    };
+    loadAndMarkRead();
   }, []);
+
+  // Auto-mark all as read once notifications are loaded
+  useEffect(() => {
+    if (!loading && notifications.length > 0 && unreadCount > 0) {
+      markAllAsRead();
+    }
+  }, [loading]);
 
   const getNotificationIcon = (type) => {
     const icons = {
@@ -60,14 +68,6 @@ const Notifications = () => {
       colors[type] ||
       "bg-gray-50 dark:bg-gray-800/20 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-300"
     );
-  };
-
-  const handleMarkAsRead = async (id) => {
-    await markAsRead(id);
-  };
-
-  const handleMarkAllAsRead = async () => {
-    await markAllAsRead();
   };
 
   const handleDelete = async (id) => {
@@ -127,20 +127,12 @@ const Notifications = () => {
           </div>
           <div className="flex items-center space-x-3">
             {notifications.length > 0 && (
-              <>
-                <button
-                  onClick={handleMarkAllAsRead}
-                  className="flex items-center space-x-1 px-3 py-1.5 text-sm bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition">
-                  <FiCheckCircle size={14} />
-                  <span>Mark all read</span>
-                </button>
-                <button
-                  onClick={handleDeleteAll}
-                  className="flex items-center space-x-1 px-3 py-1.5 text-sm bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition">
-                  <FiTrash2 size={14} />
-                  <span>Clear all</span>
-                </button>
-              </>
+              <button
+                onClick={handleDeleteAll}
+                className="flex items-center space-x-1 px-3 py-1.5 text-sm bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition">
+                <FiTrash2 size={14} />
+                <span>Clear all</span>
+              </button>
             )}
             <DarkModeToggle />
           </div>
@@ -199,11 +191,6 @@ const Notifications = () => {
                       <div>
                         <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
                           {notification.title}
-                          {!notification.read && (
-                            <span className="ml-2 text-xs bg-indigo-500 text-white px-2 py-0.5 rounded-full">
-                              New
-                            </span>
-                          )}
                         </h4>
                         <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                           {notification.message}
@@ -235,19 +222,8 @@ const Notifications = () => {
                     </div>
                   </div>
 
-                  {/* Actions */}
+                  {/* Actions - only delete */}
                   <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                    {!notification.read && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMarkAsRead(notification._id);
-                        }}
-                        className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition"
-                        title="Mark as read">
-                        <FiCheck size={16} />
-                      </button>
-                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
