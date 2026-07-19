@@ -69,8 +69,8 @@ const SettingsTerminal = () => {
           Cursor Style
         </label>
         <select
-          value={settings.cursorStyle}
-          onChange={(e) => handleChange("cursorStyle", e.target.value)}
+          value={settings.terminalCursorStyle}
+          onChange={(e) => handleChange("terminalCursorStyle", e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
           <option value="block">Block</option>
           <option value="line">Line</option>

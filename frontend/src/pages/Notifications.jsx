@@ -23,6 +23,7 @@ const Notifications = () => {
     loading,
     hasMore,
     loadNotifications,
+    markAsRead,
     markAllAsRead,
     deleteNotification,
   } = useNotifications();

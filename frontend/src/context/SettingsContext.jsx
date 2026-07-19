@@ -1,6 +1,7 @@
 // frontend/src/context/SettingsContext.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { settingsAPI } from "../services/api";
+import { useAuth } from "./AuthContext";
 import toast from "react-hot-toast";
 
 const SettingsContext = createContext();
@@ -55,7 +56,7 @@ export const SettingsProvider = ({ children }) => {
     defaultShell: "bash",
     terminalFontSize: 14,
     cursorBlink: true,
-    cursorStyle: "block",
+    terminalCursorStyle: "block",
     terminalTheme: "dark",
 
     // Keyboard
@@ -90,7 +91,15 @@ export const SettingsProvider = ({ children }) => {
     twoFactorAuth: false,
   });
 
+  const { user, setUser } = useAuth();
   const [loading, setLoading] = useState(false);
+
+  // Sync settings when user settings are updated/loaded from AuthContext
+  useEffect(() => {
+    if (user?.settings) {
+      setSettings((prev) => ({ ...prev, ...user.settings }));
+    }
+  }, [user]);
 
   const loadSettings = async () => {
     try {
@@ -98,6 +107,15 @@ export const SettingsProvider = ({ children }) => {
       const response = await settingsAPI.get();
       if (response.data?.settings) {
         setSettings((prev) => ({ ...prev, ...response.data.settings }));
+        if (setUser) {
+          setUser((prevUser) => {
+            if (!prevUser) return prevUser;
+            return {
+              ...prevUser,
+              settings: { ...prevUser.settings, ...response.data.settings },
+            };
+          });
+        }
       }
     } catch (error) {
       console.error("Load settings error:", error);
@@ -114,6 +132,15 @@ export const SettingsProvider = ({ children }) => {
     try {
       setLoading(true);
       await settingsAPI.update(settings);
+      if (setUser) {
+        setUser((prevUser) => {
+          if (!prevUser) return prevUser;
+          return {
+            ...prevUser,
+            settings: { ...prevUser.settings, ...settings },
+          };
+        });
+      }
       return true;
     } catch (error) {
       console.error("Save settings error:", error);
@@ -156,7 +183,7 @@ export const SettingsProvider = ({ children }) => {
       defaultShell: "bash",
       terminalFontSize: 14,
       cursorBlink: true,
-      cursorStyle: "block",
+      terminalCursorStyle: "block",
       terminalTheme: "dark",
       keybindings: {
         save: "Ctrl+S",
@@ -183,6 +210,15 @@ export const SettingsProvider = ({ children }) => {
     setSettings(defaultSettings);
     try {
       await settingsAPI.update(defaultSettings);
+      if (setUser) {
+        setUser((prevUser) => {
+          if (!prevUser) return prevUser;
+          return {
+            ...prevUser,
+            settings: defaultSettings,
+          };
+        });
+      }
       return true;
     } catch (error) {
       console.error("Reset settings error:", error);
@@ -191,8 +227,10 @@ export const SettingsProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    loadSettings();
-  }, []);
+    if (user) {
+      loadSettings();
+    }
+  }, [user]);
 
   const value = {
     settings,

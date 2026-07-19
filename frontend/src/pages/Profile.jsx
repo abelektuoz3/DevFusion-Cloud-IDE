@@ -2,56 +2,72 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
 import {
   FiArrowLeft,
-  FiCamera,
-  FiEdit2,
-  FiLock,
   FiTrash2,
-  FiMail,
-  FiCheckCircle,
+  FiMapPin,
   FiGlobe,
-  FiClock,
+  FiGithub,
+  FiTwitter,
+  FiLinkedin,
 } from "react-icons/fi";
 import DarkModeToggle from "../components/ui/DarkModeToggle";
 import ProfileHeader from "../components/profile/ProfileHeader";
 import ProfileStats from "../components/profile/ProfileStats";
 import ProfileAccount from "../components/profile/ProfileAccount";
+import ProfileEditForm from "../components/profile/ProfileEditForm";
+import { workspaceAPI } from "../services/api";
 import toast from "react-hot-toast";
 
 const Profile = () => {
   const { user } = useAuth();
-  const { isDark } = useTheme();
   const navigate = useNavigate();
+  const [showEditForm, setShowEditForm] = useState(false);
   const [stats, setStats] = useState({
     projects: 0,
     filesEdited: 0,
-    storageUsed: "0 GB",
+    storageUsed: "0 MB",
     storageLimit: "10 GB",
     createdAt: "",
   });
 
   useEffect(() => {
     loadStats();
-  }, []);
+  }, [user]);
 
   const loadStats = async () => {
     try {
+      // Fetch real workspace count
+      const res = await workspaceAPI.getAll();
+      const workspaces = res.data?.workspaces || res.data || [];
+      const count = Array.isArray(workspaces) ? workspaces.length : 0;
+
+      // Format account creation date
+      const createdAt = user?.createdAt
+        ? new Date(user.createdAt).toLocaleDateString("en-US", {
+            month: "long",
+            year: "numeric",
+          })
+        : "Unknown";
+
       setStats({
-        projects: 24,
-        filesEdited: 1280,
-        storageUsed: "2.8 GB",
+        projects: count,
+        filesEdited: 0,
+        storageUsed: "—",
         storageLimit: "10 GB",
-        createdAt: "July 2026",
+        createdAt,
       });
     } catch (error) {
       console.error("Load stats error:", error);
+      // fallback with real creation date
+      const createdAt = user?.createdAt
+        ? new Date(user.createdAt).toLocaleDateString("en-US", {
+            month: "long",
+            year: "numeric",
+          })
+        : "Unknown";
+      setStats((prev) => ({ ...prev, createdAt }));
     }
-  };
-
-  const handleEditProfile = () => {
-    navigate("/settings?tab=general");
   };
 
   const handleChangePassword = () => {
@@ -64,7 +80,7 @@ const Profile = () => {
         "Are you sure you want to delete your account? This action cannot be undone.",
       )
     ) {
-      toast.error("Account deletion is not available in demo mode");
+      toast.error("Account deletion is not available yet.");
     }
   };
 
@@ -99,9 +115,81 @@ const Profile = () => {
         {/* Profile Header */}
         <ProfileHeader
           user={user}
-          onEditProfile={handleEditProfile}
+          onEditProfile={() => setShowEditForm((v) => !v)}
           onChangePassword={handleChangePassword}
+          isEditing={showEditForm}
         />
+
+        {/* Inline Edit Form */}
+        {showEditForm && (
+          <ProfileEditForm onClose={() => setShowEditForm(false)} />
+        )}
+
+        {/* Profile Info (bio, location, website, socials) */}
+        {!showEditForm && (user?.bio || user?.location || user?.website || user?.github || user?.twitter || user?.linkedin) && (
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              About
+            </h3>
+            <div className="space-y-3">
+              {user?.bio && (
+                <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                  {user.bio}
+                </p>
+              )}
+              {(user?.location || user?.website || user?.github || user?.twitter || user?.linkedin) && (
+                <div className="flex flex-wrap gap-4 pt-2">
+                  {user?.location && (
+                    <span className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+                      <FiMapPin size={14} className="text-indigo-500" />
+                      {user.location}
+                    </span>
+                  )}
+                  {user?.website && (
+                    <a
+                      href={user.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+                      <FiGlobe size={14} />
+                      {user.website.replace(/^https?:\/\//, "")}
+                    </a>
+                  )}
+                  {user?.github && (
+                    <a
+                      href={`https://github.com/${user.github}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300 hover:text-indigo-500 transition">
+                      <FiGithub size={14} />
+                      {user.github}
+                    </a>
+                  )}
+                  {user?.twitter && (
+                    <a
+                      href={`https://twitter.com/${user.twitter}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-sm text-sky-600 dark:text-sky-400 hover:underline">
+                      <FiTwitter size={14} />
+                      @{user.twitter}
+                    </a>
+                  )}
+                  {user?.linkedin && (
+                    <a
+                      href={`https://linkedin.com/in/${user.linkedin}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                      <FiLinkedin size={14} />
+                      {user.linkedin}
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Statistics */}
         <ProfileStats stats={stats} />

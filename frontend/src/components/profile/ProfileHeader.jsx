@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { authAPI } from "../../services/api";
 import toast from "react-hot-toast";
 
-const ProfileHeader = ({ user, onEditProfile, onChangePassword }) => {
+const ProfileHeader = ({ user, onEditProfile, onChangePassword, isEditing }) => {
   const { setUser } = useAuth();
   const fileInputRef = useRef(null);
 
@@ -97,7 +97,7 @@ const ProfileHeader = ({ user, onEditProfile, onChangePassword }) => {
             onClick={onEditProfile}
             className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition">
             <FiEdit2 size={16} />
-            <span>Edit Profile</span>
+            <span>{isEditing ? "Cancel Edit" : "Edit Profile"}</span>
           </button>
           <button
             onClick={onChangePassword}

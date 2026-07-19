@@ -45,6 +45,7 @@ export const authAPI = {
   login: (data) => api.post("/auth/login", data),
   getMe: () => api.get("/auth/me"),
   updateProfile: (data) => api.put("/auth/profile", data),
+  changePassword: (data) => api.put("/auth/change-password", data),
 };
 
 // ==================== WORKSPACE API ====================
@@ -78,7 +79,7 @@ export const fileAPI = {
 // ==================== SETTINGS API ====================
 export const settingsAPI = {
   get: () => api.get("/settings"),
-  update: (data) => api.put("/settings", data),
+  update: (settings) => api.put("/settings", { settings }),
   updateTheme: (theme) => api.patch("/settings/theme", { theme }),
 };
 
