@@ -70,16 +70,14 @@ const Navbar = () => {
                   className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition">
                   Dashboard
                 </Link>
-                
-                {/* ✅ Direct Bell Icon - No component needed */}
+
+                {/* ✅ Bell Icon - Direct Link with visible styling */}
                 <Link
                   to="/notifications"
-                  className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-                  title="Notifications"
-                >
+                  className="flex items-center space-x-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                  title="Notifications">
                   <FiBell className="text-gray-600 dark:text-gray-300 text-xl" />
-                  {/* ✅ Show badge with number 3 for testing */}
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
                     3
                   </span>
                 </Link>
@@ -112,10 +110,9 @@ const Navbar = () => {
             {user && (
               <Link
                 to="/notifications"
-                className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-              >
+                className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                 <FiBell className="text-gray-600 dark:text-gray-300 text-xl" />
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
                   3
                 </span>
               </Link>
@@ -157,7 +154,7 @@ const Navbar = () => {
                   to="/notifications"
                   className="block px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition font-medium"
                   onClick={() => setIsOpen(false)}>
-                  Notifications 🔔
+                  🔔 Notifications
                 </Link>
                 <button
                   onClick={handleLogout}
