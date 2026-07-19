@@ -1,10 +1,9 @@
-// frontend/src/components/layout/Navbar.jsx - Add NotificationBell
+// frontend/src/components/layout/Navbar.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FiCode, FiMenu, FiX, FiLogOut } from "react-icons/fi";
+import { FiCode, FiMenu, FiX, FiLogOut, FiBell } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import DarkModeToggle from "../ui/DarkModeToggle";
-import NotificationBell from "../ui/NotificationBell";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -71,8 +70,20 @@ const Navbar = () => {
                   className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition">
                   Dashboard
                 </Link>
-                {/* ✅ Notification Bell */}
-                <NotificationBell />
+                
+                {/* ✅ Direct Bell Icon - No component needed */}
+                <Link
+                  to="/notifications"
+                  className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                  title="Notifications"
+                >
+                  <FiBell className="text-gray-600 dark:text-gray-300 text-xl" />
+                  {/* ✅ Show badge with number 3 for testing */}
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                    3
+                  </span>
+                </Link>
+
                 <button
                   onClick={handleLogout}
                   className="flex items-center space-x-1.5 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 transition">
@@ -98,7 +109,17 @@ const Navbar = () => {
           </div>
 
           <div className="md:hidden flex items-center space-x-2">
-            {user && <NotificationBell />}
+            {user && (
+              <Link
+                to="/notifications"
+                className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <FiBell className="text-gray-600 dark:text-gray-300 text-xl" />
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  3
+                </span>
+              </Link>
+            )}
             <DarkModeToggle />
             <button
               className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition"
@@ -136,7 +157,7 @@ const Navbar = () => {
                   to="/notifications"
                   className="block px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition font-medium"
                   onClick={() => setIsOpen(false)}>
-                  Notifications
+                  Notifications 🔔
                 </Link>
                 <button
                   onClick={handleLogout}
