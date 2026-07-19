@@ -1,20 +1,15 @@
 // frontend/src/components/layout/DashboardNavbar.jsx
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { FiCode, FiLogOut, FiBell } from "react-icons/fi";
+import { Link } from "react-router-dom";
+import { FiCode, FiBell } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import DarkModeToggle from "../ui/DarkModeToggle";
+import ProfileDropdown from "./ProfileDropdown";
 
 const DashboardNavbar = ({ projectCount = 0 }) => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { unreadCount } = useNotifications();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
 
   return (
     <nav className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-4 sticky top-0 z-10">
@@ -36,7 +31,7 @@ const DashboardNavbar = ({ projectCount = 0 }) => {
           </div>
         </div>
 
-        {/* Right: project count, bell, dark mode, logout */}
+        {/* Right: project count, bell, dark mode, profile dropdown */}
         <div className="flex items-center space-x-3">
           <span className="text-sm text-gray-600 dark:text-gray-400 hidden md:block">
             {projectCount} {projectCount === 1 ? "project" : "projects"}
@@ -58,13 +53,7 @@ const DashboardNavbar = ({ projectCount = 0 }) => {
 
           <DarkModeToggle />
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center space-x-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 px-4 py-2 rounded-xl transition-all duration-300"
-          >
-            <FiLogOut size={18} />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
+          <ProfileDropdown />
         </div>
       </div>
     </nav>

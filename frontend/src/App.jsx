@@ -19,6 +19,9 @@ import Dashboard from "./pages/Dashboard";
 import Editor from "./pages/Editor";
 import WorkspaceEditor from "./pages/WorkspaceEditor";
 import Notifications from "./pages/Notifications";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
+import { SettingsProvider } from "./context/SettingsContext";
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -114,6 +117,22 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </>
   );
@@ -124,11 +143,13 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <Router>
-          <WorkspaceProvider>
-            <NotificationProvider>
-              <AppContent />
-            </NotificationProvider>
-          </WorkspaceProvider>
+          <SettingsProvider>
+            <WorkspaceProvider>
+              <NotificationProvider>
+                <AppContent />
+              </NotificationProvider>
+            </WorkspaceProvider>
+          </SettingsProvider>
         </Router>
       </AuthProvider>
     </ThemeProvider>

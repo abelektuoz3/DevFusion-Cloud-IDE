@@ -1,9 +1,10 @@
 // frontend/src/components/layout/Navbar.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FiCode, FiMenu, FiX, FiLogOut } from "react-icons/fi";
+import { FiCode, FiMenu, FiX } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import DarkModeToggle from "../ui/DarkModeToggle";
+import ProfileDropdown from "./ProfileDropdown";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -69,7 +70,6 @@ const Navbar = () => {
               How It Works
             </button>
 
-            {/* ✅ Show bell if logged in */}
             {isLoggedIn && (
               <>
                 <Link
@@ -78,12 +78,7 @@ const Navbar = () => {
                   Dashboard
                 </Link>
 
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center space-x-1.5 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 transition">
-                  <FiLogOut size={16} />
-                  <span>Logout</span>
-                </button>
+                <ProfileDropdown />
               </>
             )}
 
@@ -138,6 +133,18 @@ const Navbar = () => {
                   className="block px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition font-medium"
                   onClick={() => setIsOpen(false)}>
                   Dashboard
+                </Link>
+                <Link
+                  to="/profile"
+                  className="block px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition font-medium"
+                  onClick={() => setIsOpen(false)}>
+                  👤 Profile
+                </Link>
+                <Link
+                  to="/settings"
+                  className="block px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition font-medium"
+                  onClick={() => setIsOpen(false)}>
+                  ⚙️ Settings
                 </Link>
                 <Link
                   to="/notifications"

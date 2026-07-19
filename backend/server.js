@@ -15,7 +15,7 @@ connectDB();
 
 const app = express();
 
-// ✅ Enable trust proxy for Render
+// Enable trust proxy for Render
 app.set("trust proxy", 1);
 
 // Security middleware
@@ -38,7 +38,7 @@ app.use("/api", limiter);
 // Compression
 app.use(compression());
 
-// ✅ Updated CORS
+// CORS
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "https://dev-fusion-cloud-ide.vercel.app",
@@ -79,8 +79,9 @@ const notificationRoutes = require("./routes/notifications");
 const searchRoutes = require("./routes/search");
 const projectRoutes = require("./routes/projects");
 const runRoutes = require("./routes/run");
+const profileRoutes = require("./routes/profile"); // ✅ NEW
 
-// ✅ Mount routes - ORDER MATTERS! Make sure specific routes come before wildcards
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/workspaces", workspaceRoutes);
 app.use("/api/folders", folderRoutes);
@@ -90,25 +91,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/run", runRoutes);
-
-// ✅ Debug: Log all registered routes
-console.log("\n📋 Registered Routes:");
-app._router.stack.forEach((middleware) => {
-  if (middleware.route) {
-    console.log(
-      `  ${Object.keys(middleware.route.methods).join(", ").toUpperCase()} /api${middleware.route.path}`,
-    );
-  }
-  if (middleware.name === "router" && middleware.regexp) {
-    const path = middleware.regexp.source
-      .replace(/\\\//g, "/")
-      .replace(/\^/g, "")
-      .replace(/\?/g, "")
-      .replace(/\(\?:\(\[\^\\\/\]\+\)\)/g, "/:id");
-    console.log(`  Router mounted at: ${path}`);
-  }
-});
-console.log("");
+app.use("/api/profile", profileRoutes); // ✅ NEW
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -136,6 +119,7 @@ app.get("/", (req, res) => {
       search: "/api/search",
       projects: "/api/projects",
       run: "/api/run",
+      profile: "/api/profile", // ✅ NEW
     },
   });
 });

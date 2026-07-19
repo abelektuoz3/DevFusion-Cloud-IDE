@@ -315,6 +315,42 @@ const logout = async (req, res) => {
   }
 };
 
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const { bio, location, website, github, linkedin, twitter, avatar } = req.body;
+
+    if (bio !== undefined) user.bio = bio;
+    if (location !== undefined) user.location = location;
+    if (website !== undefined) user.website = website;
+    if (github !== undefined) user.github = github;
+    if (linkedin !== undefined) user.linkedin = linkedin;
+    if (twitter !== undefined) user.twitter = twitter;
+    if (avatar !== undefined) user.avatar = avatar;
+
+    await user.save();
+
+    // Do not return password
+    const updatedUser = await User.findById(user._id).select("-password");
+
+    res.json({
+      message: "Profile updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 module.exports = {
   register,
   verifyOTP,
@@ -322,4 +358,5 @@ module.exports = {
   login,
   getCurrentUser,
   logout,
+  updateProfile,
 };

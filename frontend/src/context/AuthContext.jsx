@@ -72,29 +72,29 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loadUser = async () => {
+    const storedToken = localStorage.getItem("token");
+
+    if (!storedToken) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await api.get("/auth/me");
+      setUser(response.data.user);
+    } catch (error) {
+      console.error("Load user error:", error);
+      localStorage.removeItem("token");
+      setToken(null);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Load user on mount
   useEffect(() => {
-    const loadUser = async () => {
-      const storedToken = localStorage.getItem("token");
-
-      if (!storedToken) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await api.get("/auth/me");
-        setUser(response.data.user);
-      } catch (error) {
-        console.error("Load user error:", error);
-        localStorage.removeItem("token");
-        setToken(null);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadUser();
   }, []);
 
@@ -184,6 +184,8 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
+        setUser,
+        loadUser,
         login,
         register,
         logout,
