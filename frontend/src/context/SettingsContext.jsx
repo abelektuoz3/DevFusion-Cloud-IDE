@@ -99,7 +99,7 @@ export const SettingsProvider = ({ children }) => {
     if (user?.settings) {
       setSettings((prev) => ({ ...prev, ...user.settings }));
     }
-  }, [user]);
+  }, [user?._id]);
 
   const loadSettings = async () => {
     try {
@@ -230,7 +230,7 @@ export const SettingsProvider = ({ children }) => {
     if (user) {
       loadSettings();
     }
-  }, [user]);
+  }, [user?._id]);
 
   const value = {
     settings,

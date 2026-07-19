@@ -116,7 +116,7 @@ export const NotificationProvider = ({ children }) => {
       console.log("✅ User authenticated, loading notifications...");
       loadNotifications();
     }
-  }, [user, authLoading]);
+  }, [user?._id, authLoading]);
 
   const value = {
     notifications,
