@@ -2,7 +2,6 @@
 import React from "react";
 import {
   FiSettings,
-  FiPalette,
   FiEdit,
   FiFile,
   FiTerminal,
@@ -15,10 +14,11 @@ import {
   FiInfo,
   FiSearch,
 } from "react-icons/fi";
+import { MdPalette } from "react-icons/md";
 
 const menuItems = [
   { id: "general", label: "General", icon: FiSettings },
-  { id: "appearance", label: "Appearance", icon: FiPalette },
+  { id: "appearance", label: "Appearance", icon: MdPalette },
   { id: "editor", label: "Editor", icon: FiEdit },
   { id: "files", label: "Files", icon: FiFile },
   { id: "terminal", label: "Terminal", icon: FiTerminal },
