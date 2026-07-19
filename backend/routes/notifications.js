@@ -5,8 +5,8 @@ const { protect } = require("../middleware/auth");
 const notificationController = require("../controllers/notificationController");
 
 router.get("/", protect, notificationController.getNotifications);
-router.put("/:id/read", protect, notificationController.markAsRead);
 router.put("/read-all", protect, notificationController.markAllAsRead);
+router.put("/:id/read", protect, notificationController.markAsRead);
 router.delete("/:id", protect, notificationController.deleteNotification);
 
 module.exports = router;

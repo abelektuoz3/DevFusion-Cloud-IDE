@@ -3,12 +3,14 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FiCode, FiMenu, FiX, FiLogOut, FiBell } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
 import DarkModeToggle from "../ui/DarkModeToggle";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
 
   // ✅ Debug log to check user state
@@ -81,13 +83,14 @@ const Navbar = () => {
                 {/* ✅ Bell Icon - Always visible when logged in */}
                 <Link
                   to="/notifications"
-                  className="flex items-center space-x-1 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors border-2 border-red-500"
-                  title="Notifications"
-                  style={{ border: "2px solid red" }}>
+                  className="relative flex items-center px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                  title="Notifications">
                   <FiBell className="text-gray-600 dark:text-gray-300 text-xl" />
-                  <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                    3
-                  </span>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
                 </Link>
 
                 <button
@@ -120,13 +123,16 @@ const Navbar = () => {
           <div className="md:hidden flex items-center space-x-2">
             {isLoggedIn && (
               <Link
-                to="/notifications"
-                className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
-                <FiBell className="text-gray-600 dark:text-gray-300 text-xl" />
-                <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-                  3
+              to="/notifications"
+              className="relative flex items-center px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+              title="Notifications">
+              <FiBell className="text-gray-600 dark:text-gray-300 text-xl" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                  {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
-              </Link>
+              )}
+            </Link>
             )}
             <DarkModeToggle />
             <button

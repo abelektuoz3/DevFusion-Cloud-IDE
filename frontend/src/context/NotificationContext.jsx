@@ -40,8 +40,8 @@ export const NotificationProvider = ({ children }) => {
       });
 
       const newNotifications = response.data.notifications || [];
-      setNotifications(
-        reset ? newNotifications : [...notifications, ...newNotifications],
+      setNotifications((prev) =>
+        reset ? newNotifications : [...prev, ...newNotifications],
       );
       setUnreadCount(response.data.pagination?.unreadCount || 0);
       setHasMore(response.data.pagination?.hasMore || false);
@@ -61,12 +61,12 @@ export const NotificationProvider = ({ children }) => {
     if (!user) return;
     try {
       await notificationAPI.markAsRead(notificationId);
-      setNotifications(
-        notifications.map((n) =>
+      setNotifications((prev) =>
+        prev.map((n) =>
           n._id === notificationId ? { ...n, read: true } : n,
         ),
       );
-      setUnreadCount(Math.max(0, unreadCount - 1));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
       console.error("Mark as read error:", error);
     }
@@ -76,7 +76,7 @@ export const NotificationProvider = ({ children }) => {
     if (!user) return;
     try {
       await notificationAPI.markAllAsRead();
-      setNotifications(notifications.map((n) => ({ ...n, read: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
       toast.success("All notifications marked as read");
     } catch (error) {
@@ -89,10 +89,13 @@ export const NotificationProvider = ({ children }) => {
     if (!user) return;
     try {
       await notificationAPI.delete(notificationId);
-      setNotifications(notifications.filter((n) => n._id !== notificationId));
-      if (!notifications.find((n) => n._id === notificationId)?.read) {
-        setUnreadCount(Math.max(0, unreadCount - 1));
-      }
+      setNotifications((prev) => {
+        const target = prev.find((n) => n._id === notificationId);
+        if (target && !target.read) {
+          setUnreadCount((c) => Math.max(0, c - 1));
+        }
+        return prev.filter((n) => n._id !== notificationId);
+      });
       toast.success("Notification deleted");
     } catch (error) {
       console.error("Delete notification error:", error);
@@ -101,9 +104,9 @@ export const NotificationProvider = ({ children }) => {
   };
 
   const addNotification = (notification) => {
-    setNotifications([notification, ...notifications]);
+    setNotifications((prev) => [notification, ...prev]);
     if (!notification.read) {
-      setUnreadCount(unreadCount + 1);
+      setUnreadCount((prev) => prev + 1);
     }
   };
 
