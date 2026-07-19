@@ -123,13 +123,13 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <WorkspaceProvider>
-          <NotificationProvider>
-            <Router>
+        <Router>
+          <WorkspaceProvider>
+            <NotificationProvider>
               <AppContent />
-            </Router>
-          </NotificationProvider>
-        </WorkspaceProvider>
+            </NotificationProvider>
+          </WorkspaceProvider>
+        </Router>
       </AuthProvider>
     </ThemeProvider>
   );

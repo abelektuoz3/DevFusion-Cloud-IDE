@@ -1,6 +1,7 @@
 // frontend/src/context/NotificationContext.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { notificationAPI } from "../services/api";
+import { useAuth } from "./AuthContext";
 import toast from "react-hot-toast";
 
 const NotificationContext = createContext();
@@ -16,6 +17,7 @@ export const useNotifications = () => {
 };
 
 export const NotificationProvider = ({ children }) => {
+  const { user, loading: authLoading } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -23,6 +25,12 @@ export const NotificationProvider = ({ children }) => {
   const [hasMore, setHasMore] = useState(true);
 
   const loadNotifications = async (reset = true) => {
+    // ✅ Only load if user is authenticated
+    if (!user) {
+      console.log("⏳ Waiting for user authentication...");
+      return;
+    }
+
     try {
       setLoading(true);
       const currentPage = reset ? 1 : page;
@@ -40,12 +48,17 @@ export const NotificationProvider = ({ children }) => {
       setPage(reset ? 2 : page + 1);
     } catch (error) {
       console.error("Load notifications error:", error);
+      // ✅ Don't show toast for 401 errors - just silently fail
+      if (error.response?.status !== 401) {
+        toast.error("Failed to load notifications");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const markAsRead = async (notificationId) => {
+    if (!user) return;
     try {
       await notificationAPI.markAsRead(notificationId);
       setNotifications(
@@ -60,6 +73,7 @@ export const NotificationProvider = ({ children }) => {
   };
 
   const markAllAsRead = async () => {
+    if (!user) return;
     try {
       await notificationAPI.markAllAsRead();
       setNotifications(notifications.map((n) => ({ ...n, read: true })));
@@ -72,6 +86,7 @@ export const NotificationProvider = ({ children }) => {
   };
 
   const deleteNotification = async (notificationId) => {
+    if (!user) return;
     try {
       await notificationAPI.delete(notificationId);
       setNotifications(notifications.filter((n) => n._id !== notificationId));
@@ -92,9 +107,13 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
+  // ✅ Only load notifications when user is authenticated
   useEffect(() => {
-    loadNotifications();
-  }, []);
+    if (user && !authLoading) {
+      console.log("✅ User authenticated, loading notifications...");
+      loadNotifications();
+    }
+  }, [user, authLoading]);
 
   const value = {
     notifications,

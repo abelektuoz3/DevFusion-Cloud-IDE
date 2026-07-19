@@ -3,16 +3,15 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiBell, FiBellOff } from "react-icons/fi";
 import { useNotifications } from "../../context/NotificationContext";
+import { useAuth } from "../../context/AuthContext";
 
 const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  // ✅ Debug log to verify component renders
-  console.log("🔔 NotificationBell rendering");
-
-  // ✅ Add error handling for context
+  // ✅ Only use notifications if user is authenticated
   let notifications = [];
   let unreadCount = 0;
   let markAsRead = () => {};
@@ -22,9 +21,13 @@ const NotificationBell = () => {
     notifications = context.notifications || [];
     unreadCount = context.unreadCount || 0;
     markAsRead = context.markAsRead || (() => {});
-    console.log("✅ Notifications loaded:", notifications.length);
   } catch (error) {
-    console.warn("❌ Notification context not available:", error);
+    console.warn("Notification context not available");
+  }
+
+  // ✅ Don't render if user is not authenticated
+  if (!user) {
+    return null;
   }
 
   useEffect(() => {
@@ -38,7 +41,6 @@ const NotificationBell = () => {
   }, []);
 
   const handleBellClick = () => {
-    console.log("🔔 Bell clicked");
     setIsOpen(!isOpen);
   };
 
