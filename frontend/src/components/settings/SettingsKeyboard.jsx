@@ -1,6 +1,7 @@
 // frontend/src/components/settings/SettingsKeyboard.jsx
 import React from "react";
 import { useSettings } from "../../context/SettingsContext";
+import { IoKeyOutline } from "react-icons/io5";
 
 const SettingsKeyboard = () => {
   const { settings, updateSettings } = useSettings();
@@ -20,9 +21,12 @@ const SettingsKeyboard = () => {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-gray-500 dark:text-gray-400">
-        Customize keyboard shortcuts. Click on a shortcut to edit it.
-      </p>
+      <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
+        <IoKeyOutline size={20} />
+        <p className="text-sm">
+          Customize keyboard shortcuts. Click on a shortcut to edit it.
+        </p>
+      </div>
 
       <div className="space-y-3">
         {shortcuts.map((shortcut) => (

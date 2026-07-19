@@ -2,10 +2,10 @@
 import React from "react";
 import {
   FiSettings,
+  FiPalette,
   FiEdit,
   FiFile,
   FiTerminal,
-  FiKeyboard,
   FiPackage,
   FiGitBranch,
   FiCloud,
@@ -14,15 +14,15 @@ import {
   FiInfo,
   FiSearch,
 } from "react-icons/fi";
-import { MdPalette } from "react-icons/md";
+import { IoKeyOutline } from "react-icons/io5";
 
 const menuItems = [
   { id: "general", label: "General", icon: FiSettings },
-  { id: "appearance", label: "Appearance", icon: MdPalette },
+  { id: "appearance", label: "Appearance", icon: FiPalette },
   { id: "editor", label: "Editor", icon: FiEdit },
   { id: "files", label: "Files", icon: FiFile },
   { id: "terminal", label: "Terminal", icon: FiTerminal },
-  { id: "keyboard", label: "Keyboard", icon: FiKeyboard },
+  { id: "keyboard", label: "Keyboard", icon: IoKeyOutline },
   { id: "extensions", label: "Extensions", icon: FiPackage },
   { id: "git", label: "Git", icon: FiGitBranch },
   { id: "cloud", label: "Cloud", icon: FiCloud },
