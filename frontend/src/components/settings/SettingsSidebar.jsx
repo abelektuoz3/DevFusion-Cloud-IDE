@@ -6,8 +6,6 @@ import {
   FiEdit,
   FiFile,
   FiTerminal,
-  FiPackage,
-  FiGitBranch,
   FiCloud,
   FiBell,
   FiShield,
@@ -15,6 +13,7 @@ import {
   FiSearch,
 } from "react-icons/fi";
 import { IoKeyOutline } from "react-icons/io5";
+import { BsBoxSeam, BsGit } from "react-icons/bs";
 
 const menuItems = [
   { id: "general", label: "General", icon: FiSettings },
@@ -23,8 +22,8 @@ const menuItems = [
   { id: "files", label: "Files", icon: FiFile },
   { id: "terminal", label: "Terminal", icon: FiTerminal },
   { id: "keyboard", label: "Keyboard", icon: IoKeyOutline },
-  { id: "extensions", label: "Extensions", icon: FiPackage },
-  { id: "git", label: "Git", icon: FiGitBranch },
+  { id: "extensions", label: "Extensions", icon: BsBoxSeam },
+  { id: "git", label: "Git", icon: BsGit },
   { id: "cloud", label: "Cloud", icon: FiCloud },
   { id: "notifications", label: "Notifications", icon: FiBell },
   { id: "security", label: "Security", icon: FiShield },
