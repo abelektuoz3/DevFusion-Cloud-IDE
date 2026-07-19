@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { FiCode, FiMenu, FiX, FiLogOut } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import DarkModeToggle from "../ui/DarkModeToggle";
-import NotificationBell from "../ui/NotificationBell"; // ✅ Add this
+import NotificationBell from "../ui/NotificationBell";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
