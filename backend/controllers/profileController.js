@@ -1,20 +1,56 @@
 // backend/controllers/profileController.js
 const User = require("../models/User");
 
+// ✅ Helper to migrate old settings to new format
+const migrateSettings = (settings) => {
+  if (!settings) return settings;
+  
+  const migrated = { ...settings };
+  
+  // Fix theme values
+  if (migrated.theme === "dark") migrated.theme = "dark-plus";
+  if (migrated.theme === "light") migrated.theme = "light-plus";
+  if (migrated.theme === "vs-dark") migrated.theme = "dark-plus";
+  if (migrated.theme === "vs-light") migrated.theme = "light-plus";
+  
+  // Fix wordWrap values (boolean to string)
+  if (migrated.wordWrap === true) migrated.wordWrap = "on";
+  if (migrated.wordWrap === false) migrated.wordWrap = "off";
+  
+  // Fix terminalCursorStyle if it was using old name
+  if (migrated.cursorStyle && !migrated.terminalCursorStyle) {
+    migrated.terminalCursorStyle = migrated.cursorStyle;
+  }
+  
+  return migrated;
+};
+
 // @desc    Get user profile
 // @route   GET /api/profile
 // @access  Private
 exports.getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select(
-      "-password -otp -otpAttempts -lastOtpRequest",
+    let user = await User.findById(req.user._id).select(
+      "-password -otp -otpAttempts -lastOtpRequest"
     );
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Calculate stats (mock data or real data from DB)
+    // ✅ Migrate settings if needed
+    if (user.settings) {
+      const oldSettings = user.settings;
+      const newSettings = migrateSettings(oldSettings);
+      
+      if (JSON.stringify(oldSettings) !== JSON.stringify(newSettings)) {
+        user.settings = newSettings;
+        await user.save();
+        console.log("✅ Settings migrated for user:", user.username);
+      }
+    }
+
+    // Calculate stats
     const stats = {
       projects: 24,
       filesEdited: 1280,
@@ -78,24 +114,24 @@ exports.updateProfile = async (req, res) => {
 
     await user.save();
 
+    // Return updated user without sensitive data
+    const updatedUser = await User.findById(user._id).select(
+      "-password -otp -otpAttempts -lastOtpRequest"
+    );
+
     res.json({
       message: "Profile updated successfully",
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        bio: user.bio,
-        location: user.location,
-        website: user.website,
-        github: user.github,
-        twitter: user.twitter,
-        linkedin: user.linkedin,
-        avatar: user.avatar,
-        createdAt: user.createdAt,
-      },
+      user: updatedUser,
     });
   } catch (error) {
     console.error("Update profile error:", error);
+    
+    // Handle validation errors
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((err) => err.message);
+      return res.status(400).json({ message: errors.join(", ") });
+    }
+    
     res.status(500).json({ message: "Failed to update profile" });
   }
 };

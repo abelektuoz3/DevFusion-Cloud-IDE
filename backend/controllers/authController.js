@@ -15,6 +15,30 @@ const generateToken = (userId) => {
   });
 };
 
+// ✅ Helper to migrate old settings to new format
+const migrateSettings = (settings) => {
+  if (!settings) return settings;
+
+  const migrated = { ...settings };
+
+  // Fix theme values
+  if (migrated.theme === "dark") migrated.theme = "dark-plus";
+  if (migrated.theme === "light") migrated.theme = "light-plus";
+  if (migrated.theme === "vs-dark") migrated.theme = "dark-plus";
+  if (migrated.theme === "vs-light") migrated.theme = "light-plus";
+
+  // Fix wordWrap values (boolean to string)
+  if (migrated.wordWrap === true) migrated.wordWrap = "on";
+  if (migrated.wordWrap === false) migrated.wordWrap = "off";
+
+  // Fix terminalCursorStyle if it was using old name
+  if (migrated.cursorStyle && !migrated.terminalCursorStyle) {
+    migrated.terminalCursorStyle = migrated.cursorStyle;
+  }
+
+  return migrated;
+};
+
 // @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public
@@ -296,7 +320,21 @@ const login = async (req, res) => {
 // @access  Private
 const getCurrentUser = async (req, res) => {
   try {
-    res.json({ user: req.user });
+    let user = req.user;
+
+    // ✅ Migrate settings if needed
+    if (user && user.settings) {
+      const oldSettings = user.settings;
+      const newSettings = migrateSettings(oldSettings);
+
+      if (JSON.stringify(oldSettings) !== JSON.stringify(newSettings)) {
+        user.settings = newSettings;
+        await user.save();
+        console.log("✅ Settings migrated for user:", user.username);
+      }
+    }
+
+    res.json({ user });
   } catch (error) {
     console.error("Get user error:", error);
     res.status(500).json({ error: "Server error" });
@@ -326,7 +364,8 @@ const updateProfile = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const { bio, location, website, github, linkedin, twitter, avatar } = req.body;
+    const { bio, location, website, github, linkedin, twitter, avatar } =
+      req.body;
 
     if (bio !== undefined) user.bio = bio;
     if (location !== undefined) user.location = location;
@@ -347,6 +386,13 @@ const updateProfile = async (req, res) => {
     });
   } catch (error) {
     console.error("Update profile error:", error);
+
+    // Handle validation errors
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((err) => err.message);
+      return res.status(400).json({ error: errors.join(", ") });
+    }
+
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -365,11 +411,15 @@ const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: "Current and new password are required" });
+      return res
+        .status(400)
+        .json({ error: "Current and new password are required" });
     }
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ error: "New password must be at least 6 characters" });
+      return res
+        .status(400)
+        .json({ error: "New password must be at least 6 characters" });
     }
 
     // Verify current password
