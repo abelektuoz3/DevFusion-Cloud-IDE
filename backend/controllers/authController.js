@@ -17,25 +17,32 @@ const generateToken = (userId) => {
 
 // ✅ Helper to migrate old settings to new format
 const migrateSettings = (settings) => {
-  if (!settings) return settings;
-
+  if (!settings) return {};
+  
   const migrated = { ...settings };
-
+  
   // Fix theme values
   if (migrated.theme === "dark") migrated.theme = "dark-plus";
   if (migrated.theme === "light") migrated.theme = "light-plus";
   if (migrated.theme === "vs-dark") migrated.theme = "dark-plus";
   if (migrated.theme === "vs-light") migrated.theme = "light-plus";
-
+  
   // Fix wordWrap values (boolean to string)
   if (migrated.wordWrap === true) migrated.wordWrap = "on";
   if (migrated.wordWrap === false) migrated.wordWrap = "off";
-
-  // Fix terminalCursorStyle if it was using old name
-  if (migrated.cursorStyle && !migrated.terminalCursorStyle) {
-    migrated.terminalCursorStyle = migrated.cursorStyle;
+  
+  // Ensure keybindings exists
+  if (!migrated.keybindings || typeof migrated.keybindings !== 'object') {
+    migrated.keybindings = {
+      save: "Ctrl+S",
+      commandPalette: "Ctrl+Shift+P",
+      quickOpen: "Ctrl+P",
+      toggleSidebar: "Ctrl+B",
+      comment: "Ctrl+/",
+      search: "Ctrl+Shift+F",
+    };
   }
-
+  
   return migrated;
 };
 
@@ -68,7 +75,7 @@ const register = async (req, res) => {
     const otp = generateOTP();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Create user
+    // Create user with default settings
     const user = new User({
       username,
       email,
@@ -320,14 +327,22 @@ const login = async (req, res) => {
 // @access  Private
 const getCurrentUser = async (req, res) => {
   try {
-    let user = req.user;
+    // ✅ Fetch fresh user from database
+    let user = await User.findById(req.user._id).select("-password -otp -otpAttempts -lastOtpRequest");
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
     // ✅ Migrate settings if needed
-    if (user && user.settings) {
+    if (user.settings) {
       const oldSettings = user.settings;
       const newSettings = migrateSettings(oldSettings);
-
-      if (JSON.stringify(oldSettings) !== JSON.stringify(newSettings)) {
+      
+      // Check if migration is needed
+      const needMigration = JSON.stringify(oldSettings) !== JSON.stringify(newSettings);
+      
+      if (needMigration) {
         user.settings = newSettings;
         await user.save();
         console.log("✅ Settings migrated for user:", user.username);
@@ -358,15 +373,15 @@ const logout = async (req, res) => {
 // @access  Private
 const updateProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    let user = await User.findById(req.user._id);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const { bio, location, website, github, linkedin, twitter, avatar } =
-      req.body;
+    const { bio, location, website, github, linkedin, twitter, avatar } = req.body;
 
+    // Update fields
     if (bio !== undefined) user.bio = bio;
     if (location !== undefined) user.location = location;
     if (website !== undefined) user.website = website;
@@ -375,10 +390,21 @@ const updateProfile = async (req, res) => {
     if (twitter !== undefined) user.twitter = twitter;
     if (avatar !== undefined) user.avatar = avatar;
 
+    // ✅ Migrate settings before saving
+    if (user.settings) {
+      const oldSettings = user.settings;
+      const newSettings = migrateSettings(oldSettings);
+      
+      if (JSON.stringify(oldSettings) !== JSON.stringify(newSettings)) {
+        user.settings = newSettings;
+        console.log("✅ Settings migrated before update for user:", user.username);
+      }
+    }
+
     await user.save();
 
     // Do not return password
-    const updatedUser = await User.findById(user._id).select("-password");
+    const updatedUser = await User.findById(user._id).select("-password -otp -otpAttempts -lastOtpRequest");
 
     res.json({
       message: "Profile updated successfully",
@@ -386,13 +412,13 @@ const updateProfile = async (req, res) => {
     });
   } catch (error) {
     console.error("Update profile error:", error);
-
+    
     // Handle validation errors
     if (error.name === "ValidationError") {
       const errors = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({ error: errors.join(", ") });
     }
-
+    
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -411,15 +437,11 @@ const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res
-        .status(400)
-        .json({ error: "Current and new password are required" });
+      return res.status(400).json({ error: "Current and new password are required" });
     }
 
     if (newPassword.length < 6) {
-      return res
-        .status(400)
-        .json({ error: "New password must be at least 6 characters" });
+      return res.status(400).json({ error: "New password must be at least 6 characters" });
     }
 
     // Verify current password
