@@ -75,14 +75,27 @@ const getDefaultSettings = () => {
   };
 };
 
-// ✅ Helper to migrate old settings to new format
+// ✅ Helper to safely migrate settings
 const migrateSettings = (settings) => {
   // If settings is null/undefined, return default settings
   if (!settings || typeof settings !== "object") {
     return getDefaultSettings();
   }
 
+  // Create a clean copy
   const migrated = { ...settings };
+
+  // ✅ Ensure keybindings is an object
+  if (!migrated.keybindings || typeof migrated.keybindings !== "object") {
+    migrated.keybindings = {
+      save: "Ctrl+S",
+      commandPalette: "Ctrl+Shift+P",
+      quickOpen: "Ctrl+P",
+      toggleSidebar: "Ctrl+B",
+      comment: "Ctrl+/",
+      search: "Ctrl+Shift+F",
+    };
+  }
 
   // Fix theme values
   if (migrated.theme === "dark") migrated.theme = "dark-plus";
@@ -94,16 +107,12 @@ const migrateSettings = (settings) => {
   if (migrated.wordWrap === true) migrated.wordWrap = "on";
   if (migrated.wordWrap === false) migrated.wordWrap = "off";
 
-  // Ensure keybindings exists
-  if (!migrated.keybindings || typeof migrated.keybindings !== "object") {
-    migrated.keybindings = {
-      save: "Ctrl+S",
-      commandPalette: "Ctrl+Shift+P",
-      quickOpen: "Ctrl+P",
-      toggleSidebar: "Ctrl+B",
-      comment: "Ctrl+/",
-      search: "Ctrl+Shift+F",
-    };
+  // Ensure all required fields exist
+  const defaultSettings = getDefaultSettings();
+  for (const key of Object.keys(defaultSettings)) {
+    if (migrated[key] === undefined && key !== "keybindings") {
+      migrated[key] = defaultSettings[key];
+    }
   }
 
   return migrated;
@@ -404,27 +413,21 @@ const getCurrentUser = async (req, res) => {
 
     console.log("✅ User found:", user.username);
 
-    // ✅ Check if settings is missing or invalid
-    let settings = user.settings || {};
-
     // ✅ Migrate settings if needed
-    const oldSettings = { ...settings };
-    const newSettings = migrateSettings(oldSettings);
+    if (user.settings) {
+      const oldSettings = user.settings;
+      const newSettings = migrateSettings(oldSettings);
 
-    // Check if migration is needed
-    const needMigration =
-      JSON.stringify(oldSettings) !== JSON.stringify(newSettings);
+      // Check if migration is needed
+      const needMigration =
+        JSON.stringify(oldSettings) !== JSON.stringify(newSettings);
 
-    if (needMigration) {
-      console.log("🔄 Migrating settings for user:", user.username);
-
-      // ✅ Update user with new settings
-      user.settings = newSettings;
-      await user.save({ validateBeforeSave: false }); // Skip validation to avoid errors
-      console.log("✅ Settings migrated for user:", user.username);
-    } else {
-      // Ensure settings is an object
-      user.settings = settings;
+      if (needMigration) {
+        console.log("🔄 Migrating settings for user:", user.username);
+        user.settings = newSettings;
+        await user.save({ validateBeforeSave: false });
+        console.log("✅ Settings migrated for user:", user.username);
+      }
     }
 
     res.json({ user });
@@ -452,9 +455,16 @@ const logout = async (req, res) => {
 // @access  Private
 const updateProfile = async (req, res) => {
   try {
+    console.log("📝 Update profile called");
+    console.log("📝 User ID:", req.user?._id);
+    console.log("📝 Request body keys:", Object.keys(req.body));
+    console.log("📝 Avatar present:", !!req.body.avatar);
+    console.log("📝 Avatar length:", req.body.avatar?.length || 0);
+
     let user = await User.findById(req.user._id);
 
     if (!user) {
+      console.log("❌ User not found");
       return res.status(404).json({ error: "User not found" });
     }
 
@@ -463,6 +473,7 @@ const updateProfile = async (req, res) => {
 
     // ✅ Validate avatar size (max 1.5MB for base64)
     if (avatar && avatar.length > 1.5 * 1024 * 1024) {
+      console.log("❌ Avatar too large:", avatar.length);
       return res.status(400).json({
         error: "Image is too large. Please upload a smaller image (max 1.5MB).",
       });
@@ -475,22 +486,34 @@ const updateProfile = async (req, res) => {
     if (github !== undefined) user.github = github;
     if (linkedin !== undefined) user.linkedin = linkedin;
     if (twitter !== undefined) user.twitter = twitter;
-    if (avatar !== undefined) user.avatar = avatar;
 
-    // ✅ Migrate settings before saving
-    if (user.settings) {
-      const oldSettings = user.settings;
-      const newSettings = migrateSettings(oldSettings);
-
-      if (JSON.stringify(oldSettings) !== JSON.stringify(newSettings)) {
-        user.settings = newSettings;
-        console.log(
-          "✅ Settings migrated before update for user:",
-          user.username,
-        );
+    // ✅ Handle avatar separately with validation
+    if (avatar !== undefined) {
+      // ✅ Ensure avatar is a valid string
+      if (typeof avatar === "string" && avatar.startsWith("data:image")) {
+        user.avatar = avatar;
+        console.log("✅ Avatar updated successfully");
+      } else {
+        console.log("❌ Invalid avatar format");
+        return res.status(400).json({
+          error: "Invalid image format. Please upload a valid image.",
+        });
       }
     }
 
+    // ✅ Ensure settings is valid before saving
+    const oldSettings = user.settings || {};
+    const newSettings = migrateSettings(oldSettings);
+
+    if (JSON.stringify(oldSettings) !== JSON.stringify(newSettings)) {
+      user.settings = newSettings;
+      console.log(
+        "✅ Settings migrated before update for user:",
+        user.username,
+      );
+    }
+
+    // ✅ Save user with validation disabled for settings
     await user.save();
 
     // Do not return password
@@ -503,7 +526,8 @@ const updateProfile = async (req, res) => {
       user: updatedUser,
     });
   } catch (error) {
-    console.error("Update profile error:", error);
+    console.error("❌ Update profile error:", error);
+    console.error("❌ Error stack:", error.stack);
 
     // Handle validation errors
     if (error.name === "ValidationError") {
