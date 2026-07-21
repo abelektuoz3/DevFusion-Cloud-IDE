@@ -461,6 +461,13 @@ const updateProfile = async (req, res) => {
     const { bio, location, website, github, linkedin, twitter, avatar } =
       req.body;
 
+    // ✅ Validate avatar size (max 1.5MB for base64)
+    if (avatar && avatar.length > 1.5 * 1024 * 1024) {
+      return res.status(400).json({
+        error: "Image is too large. Please upload a smaller image (max 1.5MB).",
+      });
+    }
+
     // Update fields
     if (bio !== undefined) user.bio = bio;
     if (location !== undefined) user.location = location;
