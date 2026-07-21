@@ -1,4 +1,4 @@
-// frontend/src/components/layout/Navbar.jsx - Landing Page Navbar Only
+// frontend/src/components/layout/Navbar.jsx - Landing Page Navbar
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FiCode, FiMenu, FiX } from "react-icons/fi";
@@ -26,7 +26,8 @@ const Navbar = () => {
     setIsOpen(false);
   };
 
-  const isLoggedIn = user !== null && user !== undefined;
+  // ✅ For landing page, always show Login/Signup, never Dashboard
+  const showAuthButtons = true;
 
   return (
     <nav
@@ -60,26 +61,19 @@ const Navbar = () => {
               How It Works
             </button>
 
-            {isLoggedIn ?
-              <Link
-                to="/dashboard"
-                className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-lg shadow-indigo-500/25 transition">
-                Dashboard
-              </Link>
-            : <>
-                <Link
-                  to="/login"
-                  className="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition">
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-lg shadow-indigo-500/25 transition">
-                  Get Started
-                </Link>
-              </>
-            }
+            {/* ✅ Always show Login and Get Started on landing page */}
+            <Link
+              to="/login"
+              className="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition">
+              Login
+            </Link>
+            <Link
+              to="/register"
+              className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-lg shadow-indigo-500/25 transition">
+              Get Started
+            </Link>
 
+            {/* Dark Mode Toggle */}
             <DarkModeToggle />
           </div>
 
@@ -112,28 +106,19 @@ const Navbar = () => {
               How It Works
             </button>
 
-            {isLoggedIn ?
-              <Link
-                to="/dashboard"
-                className="block px-4 py-3 rounded-xl text-center font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition"
-                onClick={() => setIsOpen(false)}>
-                Dashboard
-              </Link>
-            : <>
-                <Link
-                  to="/login"
-                  className="block px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition font-medium"
-                  onClick={() => setIsOpen(false)}>
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="block px-4 py-3 rounded-xl text-center font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition"
-                  onClick={() => setIsOpen(false)}>
-                  Get Started Free
-                </Link>
-              </>
-            }
+            {/* ✅ Always show Login and Get Started in mobile menu */}
+            <Link
+              to="/login"
+              className="block px-4 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition font-medium"
+              onClick={() => setIsOpen(false)}>
+              Login
+            </Link>
+            <Link
+              to="/register"
+              className="block px-4 py-3 rounded-xl text-center font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition"
+              onClick={() => setIsOpen(false)}>
+              Get Started Free
+            </Link>
           </div>
         </div>
       )}
