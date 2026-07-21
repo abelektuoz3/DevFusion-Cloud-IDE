@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiPlus,
-  FiLogOut,
   FiCode,
   FiEdit2,
   FiTrash2,
@@ -17,9 +16,7 @@ import {
 } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import { useWorkspace } from "../context/WorkspaceContext";
-import { useNotifications } from "../context/NotificationContext";
-import DarkModeToggle from "../components/ui/DarkModeToggle";
-import NotificationBell from "../components/ui/NotificationBell";
+import DashboardNavbar from "../components/layout/DashboardNavbar";
 import toast from "react-hot-toast";
 
 const Dashboard = () => {
@@ -32,7 +29,6 @@ const Dashboard = () => {
     createWorkspace,
     deleteWorkspace,
   } = useWorkspace();
-  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -154,41 +150,8 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors duration-300">
-      {/* Dashboard Navbar with Notification Bell */}
-      <nav className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-6 py-4 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-              <FiCode className="text-white text-xl" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                DevFusion IDE
-              </h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Welcome back, {user?.username || "User"}!
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <span className="text-sm text-gray-600 dark:text-gray-400 hidden md:block">
-              {projectsList.length}{" "}
-              {projectsList.length === 1 ? "project" : "projects"}
-            </span>
-
-            {/* ✅ Notification Bell */}
-            <NotificationBell />
-
-            <DarkModeToggle />
-            <button
-              onClick={logout}
-              className="flex items-center space-x-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 px-4 py-2 rounded-xl transition-all duration-300">
-              <FiLogOut size={18} />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-          </div>
-        </div>
-      </nav>
+      {/* ✅ DashboardNavbar - Fetched from DashboardNavbar.jsx */}
+      <DashboardNavbar projectCount={projectsList.length} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Projects Section */}

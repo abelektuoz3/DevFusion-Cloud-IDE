@@ -37,19 +37,21 @@ const DashboardNavbar = ({ projectCount = 0 }) => {
             {projectCount} {projectCount === 1 ? "project" : "projects"}
           </span>
 
-          {/* Bell / Notifications */}
-          <Link
-            to="/notifications"
-            className="relative p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all duration-200"
-            title="Notifications"
-          >
-            <FiBell size={20} />
-            {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-red-500 rounded-full">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
-          </Link>
+          {/* ✅ Bell / Notifications - Only shows if user is logged in */}
+          {user && (
+            <Link
+              to="/notifications"
+              className="relative p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all duration-200"
+              title="Notifications"
+            >
+              <FiBell size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-red-500 rounded-full">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </Link>
+          )}
 
           <DarkModeToggle />
 
