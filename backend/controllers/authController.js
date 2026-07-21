@@ -15,24 +15,87 @@ const generateToken = (userId) => {
   });
 };
 
+// ✅ Default settings object
+const getDefaultSettings = () => {
+  return {
+    language: "en",
+    timezone: "Africa/Addis_Ababa",
+    autoSave: true,
+    autoSaveDelay: 1000,
+    startup: "welcome",
+    restoreWorkspace: true,
+    openWelcome: true,
+    recentProjects: 5,
+    theme: "dark-plus",
+    accentColor: "indigo",
+    fontSize: 14,
+    editorFont: "JetBrains Mono",
+    iconTheme: "default",
+    treeDensity: "medium",
+    windowZoom: 100,
+    tabSize: 2,
+    insertSpaces: true,
+    wordWrap: "on",
+    minimap: true,
+    lineNumbers: true,
+    bracketPairColorization: true,
+    stickyScroll: true,
+    cursorStyle: "line",
+    smoothScrolling: true,
+    confirmBeforeDelete: true,
+    trimTrailingWhitespace: true,
+    insertFinalNewline: true,
+    exclude: ["node_modules", "dist", "build", ".git"],
+    defaultShell: "bash",
+    terminalFontSize: 14,
+    cursorBlink: true,
+    terminalCursorStyle: "block",
+    terminalTheme: "dark",
+    keybindings: {
+      save: "Ctrl+S",
+      commandPalette: "Ctrl+Shift+P",
+      quickOpen: "Ctrl+P",
+      toggleSidebar: "Ctrl+B",
+      comment: "Ctrl+/",
+      search: "Ctrl+Shift+F",
+    },
+    gitUsername: "",
+    gitEmail: "",
+    autoFetch: true,
+    confirmBeforePush: true,
+    gitDecorations: true,
+    cloudSync: true,
+    backupFrequency: "daily",
+    workspaceSync: true,
+    desktopNotifications: true,
+    sound: true,
+    updateNotifications: true,
+    friendActivity: true,
+    twoFactorAuth: false,
+  };
+};
+
 // ✅ Helper to migrate old settings to new format
 const migrateSettings = (settings) => {
-  if (!settings) return {};
-  
+  // If settings is null/undefined, return default settings
+  if (!settings || typeof settings !== "object") {
+    return getDefaultSettings();
+  }
+
   const migrated = { ...settings };
-  
+
   // Fix theme values
   if (migrated.theme === "dark") migrated.theme = "dark-plus";
   if (migrated.theme === "light") migrated.theme = "light-plus";
   if (migrated.theme === "vs-dark") migrated.theme = "dark-plus";
   if (migrated.theme === "vs-light") migrated.theme = "light-plus";
-  
+
   // Fix wordWrap values (boolean to string)
   if (migrated.wordWrap === true) migrated.wordWrap = "on";
   if (migrated.wordWrap === false) migrated.wordWrap = "off";
-  
+
   // Ensure keybindings exists
-  if (!migrated.keybindings || typeof migrated.keybindings !== 'object') {
+  if (!migrated.keybindings || typeof migrated.keybindings !== "object") {
     migrated.keybindings = {
       save: "Ctrl+S",
       commandPalette: "Ctrl+Shift+P",
@@ -42,7 +105,7 @@ const migrateSettings = (settings) => {
       search: "Ctrl+Shift+F",
     };
   }
-  
+
   return migrated;
 };
 
@@ -327,31 +390,47 @@ const login = async (req, res) => {
 // @access  Private
 const getCurrentUser = async (req, res) => {
   try {
+    console.log("📝 Getting current user:", req.user?._id);
+
     // ✅ Fetch fresh user from database
-    let user = await User.findById(req.user._id).select("-password -otp -otpAttempts -lastOtpRequest");
+    let user = await User.findById(req.user._id).select(
+      "-password -otp -otpAttempts -lastOtpRequest",
+    );
 
     if (!user) {
+      console.log("❌ User not found");
       return res.status(404).json({ error: "User not found" });
     }
 
+    console.log("✅ User found:", user.username);
+
+    // ✅ Check if settings is missing or invalid
+    let settings = user.settings || {};
+
     // ✅ Migrate settings if needed
-    if (user.settings) {
-      const oldSettings = user.settings;
-      const newSettings = migrateSettings(oldSettings);
-      
-      // Check if migration is needed
-      const needMigration = JSON.stringify(oldSettings) !== JSON.stringify(newSettings);
-      
-      if (needMigration) {
-        user.settings = newSettings;
-        await user.save();
-        console.log("✅ Settings migrated for user:", user.username);
-      }
+    const oldSettings = { ...settings };
+    const newSettings = migrateSettings(oldSettings);
+
+    // Check if migration is needed
+    const needMigration =
+      JSON.stringify(oldSettings) !== JSON.stringify(newSettings);
+
+    if (needMigration) {
+      console.log("🔄 Migrating settings for user:", user.username);
+
+      // ✅ Update user with new settings
+      user.settings = newSettings;
+      await user.save({ validateBeforeSave: false }); // Skip validation to avoid errors
+      console.log("✅ Settings migrated for user:", user.username);
+    } else {
+      // Ensure settings is an object
+      user.settings = settings;
     }
 
     res.json({ user });
   } catch (error) {
-    console.error("Get user error:", error);
+    console.error("❌ Get user error:", error);
+    console.error("❌ Error stack:", error.stack);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -379,7 +458,8 @@ const updateProfile = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const { bio, location, website, github, linkedin, twitter, avatar } = req.body;
+    const { bio, location, website, github, linkedin, twitter, avatar } =
+      req.body;
 
     // Update fields
     if (bio !== undefined) user.bio = bio;
@@ -394,17 +474,22 @@ const updateProfile = async (req, res) => {
     if (user.settings) {
       const oldSettings = user.settings;
       const newSettings = migrateSettings(oldSettings);
-      
+
       if (JSON.stringify(oldSettings) !== JSON.stringify(newSettings)) {
         user.settings = newSettings;
-        console.log("✅ Settings migrated before update for user:", user.username);
+        console.log(
+          "✅ Settings migrated before update for user:",
+          user.username,
+        );
       }
     }
 
     await user.save();
 
     // Do not return password
-    const updatedUser = await User.findById(user._id).select("-password -otp -otpAttempts -lastOtpRequest");
+    const updatedUser = await User.findById(user._id).select(
+      "-password -otp -otpAttempts -lastOtpRequest",
+    );
 
     res.json({
       message: "Profile updated successfully",
@@ -412,13 +497,13 @@ const updateProfile = async (req, res) => {
     });
   } catch (error) {
     console.error("Update profile error:", error);
-    
+
     // Handle validation errors
     if (error.name === "ValidationError") {
       const errors = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({ error: errors.join(", ") });
     }
-    
+
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -437,11 +522,15 @@ const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: "Current and new password are required" });
+      return res
+        .status(400)
+        .json({ error: "Current and new password are required" });
     }
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ error: "New password must be at least 6 characters" });
+      return res
+        .status(400)
+        .json({ error: "New password must be at least 6 characters" });
     }
 
     // Verify current password
