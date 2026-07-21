@@ -15,7 +15,7 @@ const generateToken = (userId) => {
   });
 };
 
-// ✅ Default settings object
+// ✅ Default settings object - COMPLETE with all fields
 const getDefaultSettings = () => {
   return {
     language: "en",
@@ -75,19 +75,21 @@ const getDefaultSettings = () => {
   };
 };
 
-// ✅ Helper to safely migrate settings
-const migrateSettings = (settings) => {
-  // If settings is null/undefined, return default settings
+// ✅ Helper to ensure settings is ALWAYS valid - CRITICAL FIX
+const ensureValidSettings = (settings) => {
+  const defaultSettings = getDefaultSettings();
+
+  // If settings is null/undefined, return default
   if (!settings || typeof settings !== "object") {
-    return getDefaultSettings();
+    return { ...defaultSettings };
   }
 
-  // Create a clean copy
-  const migrated = { ...settings };
+  // Create a clean copy with defaults
+  const result = { ...defaultSettings, ...settings };
 
-  // ✅ Ensure keybindings is an object
-  if (!migrated.keybindings || typeof migrated.keybindings !== "object") {
-    migrated.keybindings = {
+  // ✅ CRITICAL: Force keybindings to be an object
+  if (!result.keybindings || typeof result.keybindings !== "object") {
+    result.keybindings = {
       save: "Ctrl+S",
       commandPalette: "Ctrl+Shift+P",
       quickOpen: "Ctrl+P",
@@ -98,24 +100,16 @@ const migrateSettings = (settings) => {
   }
 
   // Fix theme values
-  if (migrated.theme === "dark") migrated.theme = "dark-plus";
-  if (migrated.theme === "light") migrated.theme = "light-plus";
-  if (migrated.theme === "vs-dark") migrated.theme = "dark-plus";
-  if (migrated.theme === "vs-light") migrated.theme = "light-plus";
+  if (result.theme === "dark") result.theme = "dark-plus";
+  if (result.theme === "light") result.theme = "light-plus";
+  if (result.theme === "vs-dark") result.theme = "dark-plus";
+  if (result.theme === "vs-light") result.theme = "light-plus";
 
-  // Fix wordWrap values (boolean to string)
-  if (migrated.wordWrap === true) migrated.wordWrap = "on";
-  if (migrated.wordWrap === false) migrated.wordWrap = "off";
+  // Fix wordWrap values
+  if (result.wordWrap === true) result.wordWrap = "on";
+  if (result.wordWrap === false) result.wordWrap = "off";
 
-  // Ensure all required fields exist
-  const defaultSettings = getDefaultSettings();
-  for (const key of Object.keys(defaultSettings)) {
-    if (migrated[key] === undefined && key !== "keybindings") {
-      migrated[key] = defaultSettings[key];
-    }
-  }
-
-  return migrated;
+  return result;
 };
 
 // @desc    Register user
@@ -132,7 +126,6 @@ const register = async (req, res) => {
 
     const { username, email, password } = req.body;
 
-    // Check if user exists
     const existingUser = await User.findOne({
       $or: [{ email }, { username }],
     });
@@ -143,11 +136,9 @@ const register = async (req, res) => {
       });
     }
 
-    // Generate OTP
     const otp = generateOTP();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Create user with default settings
     const user = new User({
       username,
       email,
@@ -158,11 +149,10 @@ const register = async (req, res) => {
         expiresAt: otpExpires,
       },
       otpAttempts: 0,
+      settings: getDefaultSettings(),
     });
 
     await user.save();
-
-    // Send OTP email
     await sendOTPEmail(email, otp, username);
 
     const token = generateToken(user._id);
@@ -212,21 +202,18 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    // Check OTP attempts
     if (user.otpAttempts >= 5) {
       return res.status(429).json({
         error: "Too many failed attempts. Please request a new OTP.",
       });
     }
 
-    // Check if OTP exists
     if (!user.otp || !user.otp.code) {
       return res.status(400).json({
         error: "No OTP found. Please request a new one.",
       });
     }
 
-    // Check if OTP is expired
     if (new Date() > user.otp.expiresAt) {
       user.otpAttempts += 1;
       await user.save();
@@ -235,7 +222,6 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    // Verify OTP
     if (user.otp.code !== otp) {
       user.otpAttempts += 1;
       await user.save();
@@ -244,13 +230,11 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    // OTP is correct - verify user
     user.isVerified = true;
     user.otp = { code: null, expiresAt: null };
     user.otpAttempts = 0;
     await user.save();
 
-    // Send welcome email
     await sendVerificationSuccessEmail(email, user.username);
 
     const token = generateToken(user._id);
@@ -299,7 +283,6 @@ const resendOTP = async (req, res) => {
       });
     }
 
-    // Rate limiting: 1 minute between requests
     if (user.lastOtpRequest) {
       const timeSinceLastRequest =
         Date.now() - new Date(user.lastOtpRequest).getTime();
@@ -310,9 +293,8 @@ const resendOTP = async (req, res) => {
       }
     }
 
-    // Generate new OTP
     const otp = generateOTP();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
     user.otp = {
       code: otp,
@@ -322,7 +304,6 @@ const resendOTP = async (req, res) => {
     user.lastOtpRequest = new Date();
     await user.save();
 
-    // Send OTP email
     await sendOTPEmail(email, otp, user.username);
 
     res.json({
@@ -348,7 +329,6 @@ const login = async (req, res) => {
 
     const { email, password } = req.body;
 
-    // Find user
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -357,7 +337,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Check if email is verified
     if (!user.isVerified) {
       return res.status(403).json({
         error: "Please verify your email first. Check your inbox for the OTP.",
@@ -366,7 +345,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
@@ -374,7 +352,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Generate token
     const token = generateToken(user._id);
 
     res.json({
@@ -401,7 +378,6 @@ const getCurrentUser = async (req, res) => {
   try {
     console.log("📝 Getting current user:", req.user?._id);
 
-    // ✅ Fetch fresh user from database
     let user = await User.findById(req.user._id).select(
       "-password -otp -otpAttempts -lastOtpRequest",
     );
@@ -413,22 +389,10 @@ const getCurrentUser = async (req, res) => {
 
     console.log("✅ User found:", user.username);
 
-    // ✅ Migrate settings if needed
-    if (user.settings) {
-      const oldSettings = user.settings;
-      const newSettings = migrateSettings(oldSettings);
-
-      // Check if migration is needed
-      const needMigration =
-        JSON.stringify(oldSettings) !== JSON.stringify(newSettings);
-
-      if (needMigration) {
-        console.log("🔄 Migrating settings for user:", user.username);
-        user.settings = newSettings;
-        await user.save({ validateBeforeSave: false });
-        console.log("✅ Settings migrated for user:", user.username);
-      }
-    }
+    // ✅ ALWAYS ensure settings is valid
+    const validSettings = ensureValidSettings(user.settings);
+    user.settings = validSettings;
+    await user.save({ validateBeforeSave: false });
 
     res.json({ user });
   } catch (error) {
@@ -456,10 +420,6 @@ const logout = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     console.log("📝 Update profile called");
-    console.log("📝 User ID:", req.user?._id);
-    console.log("📝 Request body keys:", Object.keys(req.body));
-    console.log("📝 Avatar present:", !!req.body.avatar);
-    console.log("📝 Avatar length:", req.body.avatar?.length || 0);
 
     let user = await User.findById(req.user._id);
 
@@ -487,9 +447,8 @@ const updateProfile = async (req, res) => {
     if (linkedin !== undefined) user.linkedin = linkedin;
     if (twitter !== undefined) user.twitter = twitter;
 
-    // ✅ Handle avatar separately with validation
+    // ✅ Handle avatar
     if (avatar !== undefined) {
-      // ✅ Ensure avatar is a valid string
       if (typeof avatar === "string" && avatar.startsWith("data:image")) {
         user.avatar = avatar;
         console.log("✅ Avatar updated successfully");
@@ -501,22 +460,13 @@ const updateProfile = async (req, res) => {
       }
     }
 
-    // ✅ Ensure settings is valid before saving
-    const oldSettings = user.settings || {};
-    const newSettings = migrateSettings(oldSettings);
+    // ✅ CRITICAL FIX: Ensure settings is valid BEFORE saving
+    const validSettings = ensureValidSettings(user.settings);
+    user.settings = validSettings;
+    console.log("✅ Settings ensured valid for user:", user.username);
 
-    if (JSON.stringify(oldSettings) !== JSON.stringify(newSettings)) {
-      user.settings = newSettings;
-      console.log(
-        "✅ Settings migrated before update for user:",
-        user.username,
-      );
-    }
-
-    // ✅ Save user with validation disabled for settings
     await user.save();
 
-    // Do not return password
     const updatedUser = await User.findById(user._id).select(
       "-password -otp -otpAttempts -lastOtpRequest",
     );
@@ -529,7 +479,6 @@ const updateProfile = async (req, res) => {
     console.error("❌ Update profile error:", error);
     console.error("❌ Error stack:", error.stack);
 
-    // Handle validation errors
     if (error.name === "ValidationError") {
       const errors = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({ error: errors.join(", ") });
@@ -564,13 +513,11 @@ const changePassword = async (req, res) => {
         .json({ error: "New password must be at least 6 characters" });
     }
 
-    // Verify current password
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
       return res.status(401).json({ error: "Current password is incorrect" });
     }
 
-    // Set new password (pre-save hook will hash it)
     user.password = newPassword;
     await user.save();
 
