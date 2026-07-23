@@ -95,7 +95,13 @@ const SettingsFiles = () => {
         </label>
         <input
           type="text"
-          value={settings.exclude?.join(", ") || ""}
+          value={
+            Array.isArray(settings.exclude)
+              ? settings.exclude.join(", ")
+              : typeof settings.exclude === "string"
+              ? settings.exclude
+              : ""
+          }
           onChange={(e) =>
             handleChange(
               "exclude",

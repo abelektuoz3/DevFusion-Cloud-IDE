@@ -97,9 +97,25 @@ export const SettingsProvider = ({ children }) => {
   // Sync settings when user settings are updated/loaded from AuthContext
   useEffect(() => {
     if (user?.settings) {
-      setSettings((prev) => ({ ...prev, ...user.settings }));
+      setSettings((prev) => ({
+        ...prev,
+        ...user.settings,
+        keybindings: {
+          save: "Ctrl+S",
+          commandPalette: "Ctrl+Shift+P",
+          quickOpen: "Ctrl+P",
+          toggleSidebar: "Ctrl+B",
+          comment: "Ctrl+/",
+          search: "Ctrl+Shift+F",
+          ...(prev.keybindings || {}),
+          ...(user.settings.keybindings || {}),
+        },
+        exclude: Array.isArray(user.settings.exclude)
+          ? user.settings.exclude
+          : (prev.exclude || ["node_modules", "dist", "build", ".git"]),
+      }));
     }
-  }, [user?._id]);
+  }, [user?._id, user?.settings]);
 
   const loadSettings = async () => {
     try {
@@ -124,15 +140,18 @@ export const SettingsProvider = ({ children }) => {
     }
   };
 
-  const updateSettings = async (newSettings) => {
+  const updateSettings = (newSettings) => {
     setSettings((prev) => ({ ...prev, ...newSettings }));
   };
 
   const saveSettings = async () => {
     try {
       setLoading(true);
-      await settingsAPI.update(settings);
-      if (setUser) {
+      const response = await settingsAPI.update(settings);
+      const updatedUser = response.data?.user;
+      if (setUser && updatedUser) {
+        setUser(updatedUser);
+      } else if (setUser) {
         setUser((prevUser) => {
           if (!prevUser) return prevUser;
           return {

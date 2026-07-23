@@ -28,23 +28,41 @@ exports.updateSettings = async (req, res) => {
   try {
     const { settings } = req.body;
 
-    if (!settings) {
+    if (!settings || typeof settings !== "object") {
       return res.status(400).json({ message: "Settings object is required" });
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { settings },
-      { new: true, runValidators: true },
-    ).select("settings");
+    const user = await User.findById(req.user._id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // Safely merge settings
+    const current = user.settings?.toObject ? user.settings.toObject() : user.settings || {};
+    const mergedSettings = { ...current, ...settings };
+
+    // Normalize theme values if needed
+    if (mergedSettings.theme === "dark") mergedSettings.theme = "dark-plus";
+    if (mergedSettings.theme === "light") mergedSettings.theme = "light-plus";
+    if (mergedSettings.theme === "vs-dark") mergedSettings.theme = "dark-plus";
+    if (mergedSettings.theme === "vs-light") mergedSettings.theme = "light-plus";
+
+    // Normalize wordWrap values
+    if (mergedSettings.wordWrap === true) mergedSettings.wordWrap = "on";
+    if (mergedSettings.wordWrap === false) mergedSettings.wordWrap = "off";
+
+    user.settings = mergedSettings;
+    await user.save();
+
+    const updatedUser = await User.findById(user._id).select(
+      "-password -otp -otpAttempts -lastOtpRequest"
+    );
+
     res.json({
       message: "Settings updated successfully",
       settings: user.settings,
+      user: updatedUser,
     });
   } catch (error) {
     console.error("Update settings error:", error);
@@ -70,21 +88,41 @@ exports.updateSetting = async (req, res) => {
       return res.status(400).json({ message: "Key and value are required" });
     }
 
-    const updateQuery = {};
-    updateQuery[`settings.${key}`] = value;
-
-    const user = await User.findByIdAndUpdate(req.user._id, updateQuery, {
-      new: true,
-      runValidators: true,
-    }).select("settings");
+    const user = await User.findById(req.user._id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    const currentSettings = user.settings?.toObject
+      ? user.settings.toObject()
+      : user.settings || {};
+
+    if (key.includes(".")) {
+      const parts = key.split(".");
+      let target = currentSettings;
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (!target[parts[i]] || typeof target[parts[i]] !== "object") {
+          target[parts[i]] = {};
+        }
+        target = target[parts[i]];
+      }
+      target[parts[parts.length - 1]] = value;
+    } else {
+      currentSettings[key] = value;
+    }
+
+    user.settings = currentSettings;
+    await user.save();
+
+    const updatedUser = await User.findById(user._id).select(
+      "-password -otp -otpAttempts -lastOtpRequest"
+    );
+
     res.json({
       message: "Setting updated successfully",
       settings: user.settings,
+      user: updatedUser,
     });
   } catch (error) {
     console.error("Update setting error:", error);
@@ -154,19 +192,23 @@ exports.resetSettings = async (req, res) => {
       twoFactorAuth: false,
     };
 
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { settings: defaultSettings },
-      { new: true },
-    ).select("settings");
+    const user = await User.findById(req.user._id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    user.settings = defaultSettings;
+    await user.save();
+
+    const updatedUser = await User.findById(user._id).select(
+      "-password -otp -otpAttempts -lastOtpRequest"
+    );
+
     res.json({
       message: "Settings reset to default",
       settings: user.settings,
+      user: updatedUser,
     });
   } catch (error) {
     console.error("Reset settings error:", error);
