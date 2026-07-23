@@ -13,44 +13,49 @@ const ProfileHeader = ({
   const { api, setUser } = useAuth();
   const [uploading, setUploading] = useState(false);
 
-  // ✅ Compress image before upload
+  // ✅ Compress image before upload with fallback
   const compressImage = (file) => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = (event) => {
+        const rawDataUrl = event.target.result;
         const img = new Image();
-        img.src = event.target.result;
+        img.src = rawDataUrl;
         img.onload = () => {
-          const canvas = document.createElement("canvas");
-          const MAX_SIZE = 200; // Max width/height in pixels
-          let width = img.width;
-          let height = img.height;
+          try {
+            const canvas = document.createElement("canvas");
+            const MAX_SIZE = 250; // Max width/height in pixels
+            let width = img.width;
+            let height = img.height;
 
-          if (width > height) {
-            if (width > MAX_SIZE) {
-              height *= MAX_SIZE / width;
-              width = MAX_SIZE;
+            if (width > height) {
+              if (width > MAX_SIZE) {
+                height *= MAX_SIZE / width;
+                width = MAX_SIZE;
+              }
+            } else {
+              if (height > MAX_SIZE) {
+                width *= MAX_SIZE / height;
+                height = MAX_SIZE;
+              }
             }
-          } else {
-            if (height > MAX_SIZE) {
-              width *= MAX_SIZE / height;
-              height = MAX_SIZE;
-            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+            resolve(dataUrl);
+          } catch (err) {
+            console.warn("Canvas compress fallback:", err);
+            resolve(rawDataUrl);
           }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Compress to JPEG with 80% quality
-          const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
-          resolve(dataUrl);
         };
-        img.onerror = reject;
+        img.onerror = () => resolve(rawDataUrl);
       };
-      reader.onerror = reject;
+      reader.onerror = () => resolve(null);
     });
   };
 

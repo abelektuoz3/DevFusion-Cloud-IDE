@@ -446,11 +446,11 @@ const updateProfile = async (req, res) => {
       user.username = trimmedUsername;
     }
 
-    // ✅ Validate avatar size (max 1.5MB for base64)
-    if (avatar && avatar.length > 1.5 * 1024 * 1024) {
+    // ✅ Validate avatar size (max 5MB for base64 string)
+    if (avatar && avatar.length > 5 * 1024 * 1024) {
       console.log("❌ Avatar too large:", avatar.length);
       return res.status(400).json({
-        error: "Image is too large. Please upload a smaller image (max 1.5MB).",
+        error: "Image is too large. Please upload a smaller image (max 5MB).",
       });
     }
 
@@ -462,14 +462,23 @@ const updateProfile = async (req, res) => {
     if (linkedin !== undefined) user.linkedin = linkedin;
     if (twitter !== undefined) user.twitter = twitter;
 
-    // ✅ Handle avatar (support base64 or empty string to remove)
+    // ✅ Handle avatar (support base64, data URLs, web URLs, or empty string to remove)
     if (avatar !== undefined) {
       if (avatar === "" || avatar === null) {
         user.avatar = "";
         console.log("✅ Avatar removed successfully");
-      } else if (typeof avatar === "string" && avatar.startsWith("data:image")) {
+      } else if (
+        typeof avatar === "string" &&
+        (avatar.startsWith("data:") ||
+          avatar.startsWith("http://") ||
+          avatar.startsWith("https://") ||
+          avatar.startsWith("/"))
+      ) {
         user.avatar = avatar;
         console.log("✅ Avatar updated successfully");
+      } else if (typeof avatar === "string" && avatar.length > 0) {
+        user.avatar = `data:image/jpeg;base64,${avatar}`;
+        console.log("✅ Avatar formatted to data URL");
       } else {
         console.log("❌ Invalid avatar format");
         return res.status(400).json({

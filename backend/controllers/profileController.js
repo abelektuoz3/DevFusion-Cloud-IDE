@@ -42,51 +42,65 @@ exports.getProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // ✅ Migrate settings if needed
+    // ✅ Migrate settings safely if needed
     if (user.settings) {
-      const oldSettings = user.settings;
-      const newSettings = migrateSettings(oldSettings);
-      
-      if (JSON.stringify(oldSettings) !== JSON.stringify(newSettings)) {
-        user.settings = newSettings;
-        await user.save();
-        console.log("✅ Settings migrated for user:", user.username);
+      try {
+        const oldSettings = user.settings;
+        const newSettings = migrateSettings(oldSettings);
+        
+        if (JSON.stringify(oldSettings) !== JSON.stringify(newSettings)) {
+          user.settings = newSettings;
+          await user.save({ validateBeforeSave: false });
+          console.log("✅ Settings migrated for user:", user.username);
+        }
+      } catch (settingsError) {
+        console.error("Settings migration error:", settingsError);
       }
     }
 
-    // Calculate real stats dynamically
-    const projectCount = await Workspace.countDocuments({ owner: user._id });
-    const fileCount = await File.countDocuments({ owner: user._id });
-    
-    // Calculate storage used
-    const storageResult = await File.aggregate([
-      { $match: { owner: user._id } },
-      { $group: { _id: null, totalBytes: { $sum: "$size" } } },
-    ]);
-    const totalBytes = storageResult.length > 0 ? storageResult[0].totalBytes : 0;
-    
-    let storageUsed = "0 KB";
-    if (totalBytes >= 1024 * 1024 * 1024) {
-      storageUsed = `${(totalBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-    } else if (totalBytes >= 1024 * 1024) {
-      storageUsed = `${(totalBytes / (1024 * 1024)).toFixed(2)} MB`;
-    } else if (totalBytes >= 1024) {
-      storageUsed = `${(totalBytes / 1024).toFixed(1)} KB`;
-    } else {
-      storageUsed = `${totalBytes} B`;
+    // Calculate real stats dynamically with safe fallback
+    let projectCount = 0;
+    let fileCount = 0;
+    let storageUsed = "0 B";
+
+    try {
+      if (Workspace) {
+        projectCount = await Workspace.countDocuments({ owner: user._id });
+      }
+      if (File) {
+        fileCount = await File.countDocuments({ owner: user._id });
+        const files = await File.find({ owner: user._id }).select("size");
+        const totalBytes = Array.isArray(files)
+          ? files.reduce((sum, f) => sum + (f.size || 0), 0)
+          : 0;
+
+        if (totalBytes >= 1024 * 1024 * 1024) {
+          storageUsed = `${(totalBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+        } else if (totalBytes >= 1024 * 1024) {
+          storageUsed = `${(totalBytes / (1024 * 1024)).toFixed(2)} MB`;
+        } else if (totalBytes >= 1024) {
+          storageUsed = `${(totalBytes / 1024).toFixed(1)} KB`;
+        } else {
+          storageUsed = `${totalBytes} B`;
+        }
+      }
+    } catch (statsError) {
+      console.error("Stats calculation error:", statsError);
     }
+
+    const createdAt = user.createdAt
+      ? new Date(user.createdAt).toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        })
+      : "Unknown";
 
     const stats = {
       projects: projectCount,
       filesEdited: fileCount,
       storageUsed,
       storageLimit: "10 GB",
-      createdAt: user.createdAt
-        ? user.createdAt.toLocaleString("default", {
-            month: "long",
-            year: "numeric",
-          })
-        : "Unknown",
+      createdAt,
     };
 
     res.json({
@@ -95,7 +109,7 @@ exports.getProfile = async (req, res) => {
     });
   } catch (error) {
     console.error("Get profile error:", error);
-    res.status(500).json({ message: "Failed to get profile" });
+    res.status(500).json({ message: "Failed to get profile", error: error.message });
   }
 };
 
