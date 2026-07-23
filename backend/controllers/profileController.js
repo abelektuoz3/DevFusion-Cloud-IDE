@@ -1,5 +1,9 @@
 // backend/controllers/profileController.js
 const User = require("../models/User");
+const Workspace = require("../models/Workspace");
+const File = require("../models/File");
+const Folder = require("../models/Folder");
+const Notification = require("../models/Notification");
 
 // ✅ Helper to migrate old settings to new format
 const migrateSettings = (settings) => {
@@ -50,16 +54,39 @@ exports.getProfile = async (req, res) => {
       }
     }
 
-    // Calculate stats
+    // Calculate real stats dynamically
+    const projectCount = await Workspace.countDocuments({ owner: user._id });
+    const fileCount = await File.countDocuments({ owner: user._id });
+    
+    // Calculate storage used
+    const storageResult = await File.aggregate([
+      { $match: { owner: user._id } },
+      { $group: { _id: null, totalBytes: { $sum: "$size" } } },
+    ]);
+    const totalBytes = storageResult.length > 0 ? storageResult[0].totalBytes : 0;
+    
+    let storageUsed = "0 KB";
+    if (totalBytes >= 1024 * 1024 * 1024) {
+      storageUsed = `${(totalBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+    } else if (totalBytes >= 1024 * 1024) {
+      storageUsed = `${(totalBytes / (1024 * 1024)).toFixed(2)} MB`;
+    } else if (totalBytes >= 1024) {
+      storageUsed = `${(totalBytes / 1024).toFixed(1)} KB`;
+    } else {
+      storageUsed = `${totalBytes} B`;
+    }
+
     const stats = {
-      projects: 24,
-      filesEdited: 1280,
-      storageUsed: "2.8 GB",
+      projects: projectCount,
+      filesEdited: fileCount,
+      storageUsed,
       storageLimit: "10 GB",
-      createdAt: user.createdAt.toLocaleString("default", {
-        month: "long",
-        year: "numeric",
-      }),
+      createdAt: user.createdAt
+        ? user.createdAt.toLocaleString("default", {
+            month: "long",
+            year: "numeric",
+          })
+        : "Unknown",
     };
 
     res.json({
@@ -95,15 +122,19 @@ exports.updateProfile = async (req, res) => {
     }
 
     // Check if username is taken
-    if (username && username !== user.username) {
-      const existingUser = await User.findOne({ username });
-      if (existingUser) {
+    if (username && username.trim() !== user.username) {
+      const trimmed = username.trim();
+      if (trimmed.length < 3 || trimmed.length > 30) {
+        return res.status(400).json({ message: "Username must be 3-30 characters" });
+      }
+      const existingUser = await User.findOne({ username: trimmed });
+      if (existingUser && existingUser._id.toString() !== user._id.toString()) {
         return res.status(400).json({ message: "Username already taken" });
       }
+      user.username = trimmed;
     }
 
     // Update fields
-    if (username) user.username = username;
     if (bio !== undefined) user.bio = bio;
     if (location !== undefined) user.location = location;
     if (website !== undefined) user.website = website;
@@ -175,5 +206,39 @@ exports.changePassword = async (req, res) => {
   } catch (error) {
     console.error("Change password error:", error);
     res.status(500).json({ message: "Failed to change password" });
+  }
+};
+
+// @desc    Delete account
+// @route   DELETE /api/profile
+// @access  Private
+exports.deleteAccount = async (req, res) => {
+  try {
+    const { password } = req.body || {};
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (password) {
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        return res.status(401).json({ message: "Incorrect password" });
+      }
+    }
+
+    const userId = user._id;
+
+    await Workspace.deleteMany({ owner: userId });
+    await File.deleteMany({ owner: userId });
+    await Folder.deleteMany({ owner: userId });
+    await Notification.deleteMany({ user: userId });
+    await User.findByIdAndDelete(userId);
+
+    res.json({ message: "Account deleted successfully" });
+  } catch (error) {
+    console.error("Delete account error:", error);
+    res.status(500).json({ message: "Failed to delete account" });
   }
 };

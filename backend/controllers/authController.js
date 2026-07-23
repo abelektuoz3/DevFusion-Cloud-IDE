@@ -428,8 +428,23 @@ const updateProfile = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const { bio, location, website, github, linkedin, twitter, avatar } =
+    const { username, bio, location, website, github, linkedin, twitter, avatar } =
       req.body;
+
+    // ✅ Handle username update
+    if (username && username.trim() !== user.username) {
+      const trimmedUsername = username.trim();
+      if (trimmedUsername.length < 3 || trimmedUsername.length > 30) {
+        return res.status(400).json({
+          error: "Username must be between 3 and 30 characters",
+        });
+      }
+      const existingUser = await User.findOne({ username: trimmedUsername });
+      if (existingUser && existingUser._id.toString() !== user._id.toString()) {
+        return res.status(400).json({ error: "Username is already taken" });
+      }
+      user.username = trimmedUsername;
+    }
 
     // ✅ Validate avatar size (max 1.5MB for base64)
     if (avatar && avatar.length > 1.5 * 1024 * 1024) {
@@ -447,9 +462,12 @@ const updateProfile = async (req, res) => {
     if (linkedin !== undefined) user.linkedin = linkedin;
     if (twitter !== undefined) user.twitter = twitter;
 
-    // ✅ Handle avatar
+    // ✅ Handle avatar (support base64 or empty string to remove)
     if (avatar !== undefined) {
-      if (typeof avatar === "string" && avatar.startsWith("data:image")) {
+      if (avatar === "" || avatar === null) {
+        user.avatar = "";
+        console.log("✅ Avatar removed successfully");
+      } else if (typeof avatar === "string" && avatar.startsWith("data:image")) {
         user.avatar = avatar;
         console.log("✅ Avatar updated successfully");
       } else {
@@ -528,6 +546,47 @@ const changePassword = async (req, res) => {
   }
 };
 
+// @desc    Delete user account
+// @route   DELETE /api/auth/account
+// @access  Private
+const deleteAccount = async (req, res) => {
+  try {
+    const { password } = req.body || {};
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (password) {
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        return res.status(401).json({ error: "Incorrect password" });
+      }
+    }
+
+    const userId = user._id;
+
+    // Require models dynamically if needed to prevent circular dependencies
+    const Workspace = require("../models/Workspace");
+    const File = require("../models/File");
+    const Folder = require("../models/Folder");
+    const Notification = require("../models/Notification");
+
+    // Cascade delete user data
+    await Workspace.deleteMany({ owner: userId });
+    await File.deleteMany({ owner: userId });
+    await Folder.deleteMany({ owner: userId });
+    await Notification.deleteMany({ user: userId });
+    await User.findByIdAndDelete(userId);
+
+    res.json({ message: "Account and all associated data deleted successfully" });
+  } catch (error) {
+    console.error("Delete account error:", error);
+    res.status(500).json({ error: "Failed to delete account" });
+  }
+};
+
 module.exports = {
   register,
   verifyOTP,
@@ -537,4 +596,5 @@ module.exports = {
   logout,
   updateProfile,
   changePassword,
+  deleteAccount,
 };

@@ -19,4 +19,9 @@ router.put("/", protect, profileController.updateProfile);
 // @access  Private
 router.put("/password", protect, profileController.changePassword);
 
+// @route   DELETE /api/profile
+// @desc    Delete user account
+// @access  Private
+router.delete("/", protect, profileController.deleteAccount);
+
 module.exports = router;

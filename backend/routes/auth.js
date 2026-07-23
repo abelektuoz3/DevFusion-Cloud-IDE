@@ -31,5 +31,6 @@ router.get("/me", protect, authController.getCurrentUser);
 router.post("/logout", protect, authController.logout);
 router.put("/profile", protect, authController.updateProfile);
 router.put("/change-password", protect, authController.changePassword);
+router.delete("/account", protect, authController.deleteAccount);
 
 module.exports = router;

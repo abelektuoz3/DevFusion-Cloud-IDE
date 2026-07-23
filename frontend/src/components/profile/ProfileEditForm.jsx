@@ -9,6 +9,7 @@ import {
   FiTwitter,
   FiLinkedin,
   FiAlignLeft,
+  FiUser,
 } from "react-icons/fi";
 import { authAPI } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
@@ -18,6 +19,7 @@ const ProfileEditForm = ({ onClose }) => {
   const { user, setUser } = useAuth();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
+    username: "",
     bio: "",
     location: "",
     website: "",
@@ -29,6 +31,7 @@ const ProfileEditForm = ({ onClose }) => {
   useEffect(() => {
     if (user) {
       setForm({
+        username: user.username || "",
         bio: user.bio || "",
         location: user.location || "",
         website: user.website || "",
@@ -44,6 +47,10 @@ const ProfileEditForm = ({ onClose }) => {
   };
 
   const handleSave = async () => {
+    if (form.username.trim().length < 3) {
+      toast.error("Username must be at least 3 characters");
+      return;
+    }
     setSaving(true);
     try {
       const response = await authAPI.updateProfile(form);
@@ -78,6 +85,21 @@ const ProfileEditForm = ({ onClose }) => {
       </div>
 
       <div className="space-y-4">
+        {/* Username */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+            <FiUser size={14} /> Username
+          </label>
+          <input
+            type="text"
+            value={form.username}
+            onChange={(e) => handleChange("username", e.target.value)}
+            placeholder="Username"
+            minLength={3}
+            maxLength={30}
+            className={inputClass}
+          />
+        </div>
         {/* Bio */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">

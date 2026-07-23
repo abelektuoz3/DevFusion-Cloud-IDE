@@ -10,7 +10,7 @@ const ProfileHeader = ({
   onChangePassword,
   isEditing,
 }) => {
-  const { api } = useAuth();
+  const { api, setUser } = useAuth();
   const [uploading, setUploading] = useState(false);
 
   // ✅ Compress image before upload
@@ -82,9 +82,8 @@ const ProfileHeader = ({
       });
 
       if (response.data.user) {
+        setUser(response.data.user);
         toast.success("Profile picture updated successfully!");
-        // Reload to show updated avatar
-        window.location.reload();
       }
     } catch (error) {
       console.error("Upload photo error:", error);
@@ -96,30 +95,50 @@ const ProfileHeader = ({
     }
   };
 
+  // ✅ Handle removing avatar
+  const handleRemovePhoto = async () => {
+    setUploading(true);
+    try {
+      const response = await api.put("/auth/profile", { avatar: "" });
+      if (response.data.user) {
+        setUser(response.data.user);
+        toast.success("Profile picture removed!");
+      }
+    } catch (error) {
+      console.error("Remove photo error:", error);
+      toast.error(error.response?.data?.error || "Failed to remove photo");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 p-8 mb-6">
       <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
         {/* Profile Picture */}
-        <div className="relative flex-shrink-0">
-          {user?.avatar ?
+        <div className="relative flex-shrink-0 group">
+          {user?.avatar ? (
             <img
               src={user.avatar}
               alt={user.username}
-              className="w-24 h-24 rounded-full object-cover border-4 border-indigo-500"
+              className="w-24 h-24 rounded-full object-cover border-4 border-indigo-500 shadow-md"
             />
-          : <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-4xl text-white shadow-lg">
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-4xl text-white shadow-lg">
               {user?.username?.charAt(0).toUpperCase() || "U"}
             </div>
-          }
+          )}
           <label
             htmlFor="avatar-upload"
             className={`absolute -bottom-1 -right-1 p-1.5 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition shadow-lg cursor-pointer ${
               uploading ? "opacity-50 cursor-not-allowed" : ""
             }`}
             title="Upload photo">
-            {uploading ?
+            {uploading ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            : <FiCamera size={14} />}
+            ) : (
+              <FiCamera size={14} />
+            )}
           </label>
           <input
             id="avatar-upload"
@@ -129,6 +148,15 @@ const ProfileHeader = ({
             className="hidden"
             disabled={uploading}
           />
+          {user?.avatar && (
+            <button
+              onClick={handleRemovePhoto}
+              disabled={uploading}
+              className="mt-2 text-xs text-red-500 hover:text-red-600 block mx-auto underline font-medium transition"
+              title="Remove profile picture">
+              Remove photo
+            </button>
+          )}
         </div>
 
         {/* User Info */}
@@ -150,9 +178,9 @@ const ProfileHeader = ({
           <button
             onClick={onEditProfile}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition ${
-              isEditing ?
-                "bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-slate-600"
-              : "bg-indigo-600 hover:bg-indigo-700 text-white"
+              isEditing
+                ? "bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-slate-600"
+                : "bg-indigo-600 hover:bg-indigo-700 text-white"
             }`}>
             <FiEdit2 size={16} />
             <span>{isEditing ? "Cancel Edit" : "Edit Profile"}</span>
