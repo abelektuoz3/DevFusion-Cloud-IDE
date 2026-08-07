@@ -30,9 +30,10 @@ const register = async (req, res) => {
     }
 
     const { username, email, password } = req.body;
+    const normalizedEmail = email ? email.toLowerCase().trim() : "";
 
     const existingUser = await User.findOne({
-      $or: [{ email }, { username }],
+      $or: [{ email: normalizedEmail }, { username: username?.trim() }],
     });
 
     if (existingUser) {
@@ -45,8 +46,8 @@ const register = async (req, res) => {
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
     const user = new User({
-      username,
-      email,
+      username: username?.trim(),
+      email: normalizedEmail,
       password,
       isVerified: false,
       otp: {
@@ -57,7 +58,7 @@ const register = async (req, res) => {
     });
 
     await user.save();
-    await sendOTPEmail(email, otp, username);
+    await sendOTPEmail(normalizedEmail, otp, user.username);
 
     const token = generateToken(user._id);
 
@@ -85,14 +86,15 @@ const register = async (req, res) => {
 const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
+    const normalizedEmail = email ? email.toLowerCase().trim() : "";
 
-    if (!email || !otp) {
+    if (!normalizedEmail || !otp) {
       return res.status(400).json({
         error: "Email and OTP are required",
       });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       return res.status(404).json({
@@ -139,7 +141,7 @@ const verifyOTP = async (req, res) => {
     user.otpAttempts = 0;
     await user.save();
 
-    await sendVerificationSuccessEmail(email, user.username);
+    await sendVerificationSuccessEmail(normalizedEmail, user.username);
 
     const token = generateToken(user._id);
 
@@ -166,14 +168,15 @@ const verifyOTP = async (req, res) => {
 const resendOTP = async (req, res) => {
   try {
     const { email } = req.body;
+    const normalizedEmail = email ? email.toLowerCase().trim() : "";
 
-    if (!email) {
+    if (!normalizedEmail) {
       return res.status(400).json({
         error: "Email is required",
       });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       return res.status(404).json({
@@ -232,8 +235,9 @@ const login = async (req, res) => {
     }
 
     const { email, password } = req.body;
+    const normalizedEmail = email ? email.toLowerCase().trim() : "";
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       return res.status(401).json({
