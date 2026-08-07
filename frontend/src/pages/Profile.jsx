@@ -52,7 +52,7 @@ const Profile = () => {
 
   useEffect(() => {
     loadStats();
-  }, [user]);
+  }, [user?._id]);
 
   const loadStats = async () => {
     try {

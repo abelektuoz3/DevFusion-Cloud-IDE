@@ -40,7 +40,7 @@ const ProfileEditForm = ({ onClose }) => {
         linkedin: user.linkedin || "",
       });
     }
-  }, [user]);
+  }, []);
 
   const handleChange = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
