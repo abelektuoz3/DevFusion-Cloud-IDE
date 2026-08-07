@@ -256,7 +256,7 @@ const Profile = () => {
             <FiAlertTriangle size={20} /> Danger Zone
           </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Deleting your account is permanent. All your workspaces, projects, and custom preferences will be removed forever.
+            Deleting your account is permanent. All your workspaces, projects, and profile data will be removed forever.
           </p>
           <button
             onClick={() => setShowDeleteModal(true)}
@@ -372,7 +372,7 @@ const Profile = () => {
               </button>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-              Are you sure you want to delete your account? This will permanently wipe all your projects, files, and settings.
+              Are you sure you want to delete your account? This will permanently wipe all your projects, files, and profile data.
             </p>
             <form onSubmit={handleDeleteAccountSubmit} className="space-y-4">
               <div>

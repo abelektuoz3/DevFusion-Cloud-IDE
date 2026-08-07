@@ -85,13 +85,6 @@ export const fileAPI = {
   autosave: (id, data) => api.post(`/files/${id}/autosave`, data),
 };
 
-// ==================== SETTINGS API ====================
-export const settingsAPI = {
-  get: () => api.get("/settings"),
-  update: (settings) => api.put("/settings", { settings }),
-  updateTheme: (theme) => api.patch("/settings/theme", { theme }),
-};
-
 // ==================== NOTIFICATION API ====================
 export const notificationAPI = {
   get: (params) => api.get("/notifications", { params }),

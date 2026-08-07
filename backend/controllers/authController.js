@@ -15,102 +15,7 @@ const generateToken = (userId) => {
   });
 };
 
-// ✅ Default settings object - COMPLETE with all fields
-const getDefaultSettings = () => {
-  return {
-    language: "en",
-    timezone: "Africa/Addis_Ababa",
-    autoSave: true,
-    autoSaveDelay: 1000,
-    startup: "welcome",
-    restoreWorkspace: true,
-    openWelcome: true,
-    recentProjects: 5,
-    theme: "dark-plus",
-    accentColor: "indigo",
-    fontSize: 14,
-    editorFont: "JetBrains Mono",
-    iconTheme: "default",
-    treeDensity: "medium",
-    windowZoom: 100,
-    tabSize: 2,
-    insertSpaces: true,
-    wordWrap: "on",
-    minimap: true,
-    lineNumbers: true,
-    bracketPairColorization: true,
-    stickyScroll: true,
-    cursorStyle: "line",
-    smoothScrolling: true,
-    confirmBeforeDelete: true,
-    trimTrailingWhitespace: true,
-    insertFinalNewline: true,
-    exclude: ["node_modules", "dist", "build", ".git"],
-    defaultShell: "bash",
-    terminalFontSize: 14,
-    cursorBlink: true,
-    terminalCursorStyle: "block",
-    terminalTheme: "dark",
-    keybindings: {
-      save: "Ctrl+S",
-      commandPalette: "Ctrl+Shift+P",
-      quickOpen: "Ctrl+P",
-      toggleSidebar: "Ctrl+B",
-      comment: "Ctrl+/",
-      search: "Ctrl+Shift+F",
-    },
-    gitUsername: "",
-    gitEmail: "",
-    autoFetch: true,
-    confirmBeforePush: true,
-    gitDecorations: true,
-    cloudSync: true,
-    backupFrequency: "daily",
-    workspaceSync: true,
-    desktopNotifications: true,
-    sound: true,
-    updateNotifications: true,
-    friendActivity: true,
-    twoFactorAuth: false,
-  };
-};
 
-// ✅ Helper to ensure settings is ALWAYS valid - CRITICAL FIX
-const ensureValidSettings = (settings) => {
-  const defaultSettings = getDefaultSettings();
-
-  // If settings is null/undefined, return default
-  if (!settings || typeof settings !== "object") {
-    return { ...defaultSettings };
-  }
-
-  // Create a clean copy with defaults
-  const result = { ...defaultSettings, ...settings };
-
-  // ✅ CRITICAL: Force keybindings to be an object
-  if (!result.keybindings || typeof result.keybindings !== "object") {
-    result.keybindings = {
-      save: "Ctrl+S",
-      commandPalette: "Ctrl+Shift+P",
-      quickOpen: "Ctrl+P",
-      toggleSidebar: "Ctrl+B",
-      comment: "Ctrl+/",
-      search: "Ctrl+Shift+F",
-    };
-  }
-
-  // Fix theme values
-  if (result.theme === "dark") result.theme = "dark-plus";
-  if (result.theme === "light") result.theme = "light-plus";
-  if (result.theme === "vs-dark") result.theme = "dark-plus";
-  if (result.theme === "vs-light") result.theme = "light-plus";
-
-  // Fix wordWrap values
-  if (result.wordWrap === true) result.wordWrap = "on";
-  if (result.wordWrap === false) result.wordWrap = "off";
-
-  return result;
-};
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -149,7 +54,6 @@ const register = async (req, res) => {
         expiresAt: otpExpires,
       },
       otpAttempts: 0,
-      settings: getDefaultSettings(),
     });
 
     await user.save();
@@ -389,11 +293,6 @@ const getCurrentUser = async (req, res) => {
 
     console.log("✅ User found:", user.username);
 
-    // ✅ ALWAYS ensure settings is valid
-    const validSettings = ensureValidSettings(user.settings);
-    user.settings = validSettings;
-    await user.save({ validateBeforeSave: false });
-
     res.json({ user });
   } catch (error) {
     console.error("❌ Get user error:", error);
@@ -486,11 +385,6 @@ const updateProfile = async (req, res) => {
         });
       }
     }
-
-    // ✅ CRITICAL FIX: Ensure settings is valid BEFORE saving
-    const validSettings = ensureValidSettings(user.settings);
-    user.settings = validSettings;
-    console.log("✅ Settings ensured valid for user:", user.username);
 
     await user.save();
 

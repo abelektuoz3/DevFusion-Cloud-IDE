@@ -11,7 +11,6 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { WorkspaceProvider } from "./context/WorkspaceContext";
 import { NotificationProvider } from "./context/NotificationContext";
-import { SettingsProvider } from "./context/SettingsContext";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -21,7 +20,6 @@ import Editor from "./pages/Editor";
 import WorkspaceEditor from "./pages/WorkspaceEditor";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -125,14 +123,6 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          }
-        />
       </Routes>
     </>
   );
@@ -143,15 +133,11 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <Router>
-          {/* ✅ SettingsProvider should be outside WorkspaceProvider and NotificationProvider
-              since both might need access to settings */}
-          <SettingsProvider>
-            <WorkspaceProvider>
-              <NotificationProvider>
-                <AppContent />
-              </NotificationProvider>
-            </WorkspaceProvider>
-          </SettingsProvider>
+          <WorkspaceProvider>
+            <NotificationProvider>
+              <AppContent />
+            </NotificationProvider>
+          </WorkspaceProvider>
         </Router>
       </AuthProvider>
     </ThemeProvider>

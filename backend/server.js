@@ -80,7 +80,6 @@ const authRoutes = require("./routes/auth");
 const workspaceRoutes = require("./routes/workspaces");
 const folderRoutes = require("./routes/folders");
 const fileRoutes = require("./routes/files");
-const settingsRoutes = require("./routes/settings");
 const notificationRoutes = require("./routes/notifications");
 const searchRoutes = require("./routes/search");
 const projectRoutes = require("./routes/projects");
@@ -92,7 +91,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/workspaces", workspaceRoutes);
 app.use("/api/folders", folderRoutes);
 app.use("/api/files", fileRoutes);
-app.use("/api/settings", settingsRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/projects", projectRoutes);
@@ -120,7 +118,6 @@ app.get("/", (req, res) => {
       workspaces: "/api/workspaces",
       folders: "/api/folders",
       files: "/api/files",
-      settings: "/api/settings",
       notifications: "/api/notifications",
       search: "/api/search",
       projects: "/api/projects",

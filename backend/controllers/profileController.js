@@ -5,30 +5,6 @@ const File = require("../models/File");
 const Folder = require("../models/Folder");
 const Notification = require("../models/Notification");
 
-// ✅ Helper to migrate old settings to new format
-const migrateSettings = (settings) => {
-  if (!settings) return settings;
-  
-  const migrated = { ...settings };
-  
-  // Fix theme values
-  if (migrated.theme === "dark") migrated.theme = "dark-plus";
-  if (migrated.theme === "light") migrated.theme = "light-plus";
-  if (migrated.theme === "vs-dark") migrated.theme = "dark-plus";
-  if (migrated.theme === "vs-light") migrated.theme = "light-plus";
-  
-  // Fix wordWrap values (boolean to string)
-  if (migrated.wordWrap === true) migrated.wordWrap = "on";
-  if (migrated.wordWrap === false) migrated.wordWrap = "off";
-  
-  // Fix terminalCursorStyle if it was using old name
-  if (migrated.cursorStyle && !migrated.terminalCursorStyle) {
-    migrated.terminalCursorStyle = migrated.cursorStyle;
-  }
-  
-  return migrated;
-};
-
 // @desc    Get user profile
 // @route   GET /api/profile
 // @access  Private
@@ -40,22 +16,6 @@ exports.getProfile = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
-    }
-
-    // ✅ Migrate settings safely if needed
-    if (user.settings) {
-      try {
-        const oldSettings = user.settings;
-        const newSettings = migrateSettings(oldSettings);
-        
-        if (JSON.stringify(oldSettings) !== JSON.stringify(newSettings)) {
-          user.settings = newSettings;
-          await user.save({ validateBeforeSave: false });
-          console.log("✅ Settings migrated for user:", user.username);
-        }
-      } catch (settingsError) {
-        console.error("Settings migration error:", settingsError);
-      }
     }
 
     // Calculate real stats dynamically with safe fallback

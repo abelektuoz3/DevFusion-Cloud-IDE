@@ -1,60 +1,13 @@
 // frontend/src/components/profile/ProfileAccount.jsx
 import React, { useState } from "react";
-import { FiCheckCircle, FiXCircle, FiGlobe, FiClock, FiMail, FiSend } from "react-icons/fi";
+import { FiCheckCircle, FiXCircle, FiMail, FiSend, FiCalendar, FiUser } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
-import { settingsAPI } from "../../services/api";
 import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
-
-const languagesMap = {
-  en: "English",
-  am: "አማርኛ (Amharic)",
-  es: "Español (Spanish)",
-  fr: "Français (French)",
-  de: "Deutsch (German)",
-  zh: "中文 (Chinese)",
-  ja: "日本語 (Japanese)",
-};
-
-const commonTimezones = [
-  "Africa/Addis_Ababa",
-  "UTC",
-  "America/New_York",
-  "America/Los_Angeles",
-  "Europe/London",
-  "Europe/Paris",
-  "Asia/Tokyo",
-  "Asia/Dubai",
-  "Asia/Kolkata",
-  "Australia/Sydney",
-];
 
 const ProfileAccount = () => {
-  const { user, setUser, resendOTP, setPendingEmail } = useAuth();
+  const { user, resendOTP, setPendingEmail } = useAuth();
   const navigate = useNavigate();
-  const [updatingSetting, setUpdatingSetting] = useState(false);
   const [sendingOTP, setSendingOTP] = useState(false);
-
-  const handleUpdateSetting = async (key, value) => {
-    setUpdatingSetting(true);
-    try {
-      const currentSettings = user?.settings || {};
-      const newSettings = { ...currentSettings, [key]: value };
-      const response = await settingsAPI.update(newSettings);
-      
-      if (response.data?.user) {
-        setUser(response.data.user);
-      } else {
-        setUser({ ...user, settings: newSettings });
-      }
-      toast.success(`${key === "language" ? "Language" : "Timezone"} updated!`);
-    } catch (error) {
-      console.error("Update setting error:", error);
-      toast.error(error.response?.data?.error || "Failed to update preference");
-    } finally {
-      setUpdatingSetting(false);
-    }
-  };
 
   const handleVerifyEmail = async () => {
     if (!user?.email) return;
@@ -70,30 +23,54 @@ const ProfileAccount = () => {
     }
   };
 
+  const memberSince = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "Member";
+
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 mb-6">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 mb-6 shadow-sm">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        Account Settings
+        Account Details
       </h3>
       <div className="space-y-4">
+        {/* Username */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700 gap-2">
+          <div className="flex items-center space-x-2">
+            <FiUser className="text-indigo-500" size={16} />
+            <span className="text-gray-600 dark:text-gray-400 font-medium">
+              Username
+            </span>
+          </div>
+          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+            @{user?.username || "N/A"}
+          </span>
+        </div>
+
         {/* Email Verification */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700 gap-2">
           <div className="flex items-center space-x-2">
-            <FiMail className="text-gray-400" size={16} />
+            <FiMail className="text-indigo-500" size={16} />
             <span className="text-gray-600 dark:text-gray-400 font-medium">
-              Verified Email
+              Account Email
             </span>
           </div>
           <div className="flex items-center space-x-3">
+            <span className="text-sm text-gray-700 dark:text-gray-300 font-mono mr-2">
+              {user?.email}
+            </span>
             {user?.isVerified ? (
-              <span className="flex items-center space-x-1 text-green-500 font-medium text-sm">
-                <FiCheckCircle size={16} />
+              <span className="flex items-center space-x-1 text-green-500 font-medium text-xs bg-green-50 dark:bg-green-950/40 px-2.5 py-1 rounded-full border border-green-200 dark:border-green-800">
+                <FiCheckCircle size={14} />
                 <span>Verified</span>
               </span>
             ) : (
-              <div className="flex items-center space-x-3">
-                <span className="flex items-center space-x-1 text-red-500 font-medium text-sm">
-                  <FiXCircle size={16} />
+              <div className="flex items-center space-x-2">
+                <span className="flex items-center space-x-1 text-red-500 font-medium text-xs bg-red-50 dark:bg-red-950/40 px-2.5 py-1 rounded-full border border-red-200 dark:border-red-800">
+                  <FiXCircle size={14} />
                   <span>Unverified</span>
                 </span>
                 <button
@@ -108,44 +85,17 @@ const ProfileAccount = () => {
           </div>
         </div>
 
-        {/* Preferred Language */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700 gap-2">
-          <div className="flex items-center space-x-2">
-            <FiGlobe className="text-gray-400" size={16} />
-            <span className="text-gray-600 dark:text-gray-400 font-medium">
-              Preferred Language
-            </span>
-          </div>
-          <select
-            value={user?.settings?.language || "en"}
-            onChange={(e) => handleUpdateSetting("language", e.target.value)}
-            disabled={updatingSetting}
-            className="px-3 py-1.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            {Object.entries(languagesMap).map(([code, name]) => (
-              <option key={code} value={code}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Timezone */}
+        {/* Member Since */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between py-2 gap-2">
           <div className="flex items-center space-x-2">
-            <FiClock className="text-gray-400" size={16} />
-            <span className="text-gray-600 dark:text-gray-400 font-medium">Timezone</span>
+            <FiCalendar className="text-indigo-500" size={16} />
+            <span className="text-gray-600 dark:text-gray-400 font-medium">
+              Joined Date
+            </span>
           </div>
-          <select
-            value={user?.settings?.timezone || "Africa/Addis_Ababa"}
-            onChange={(e) => handleUpdateSetting("timezone", e.target.value)}
-            disabled={updatingSetting}
-            className="px-3 py-1.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
-            {commonTimezones.map((tz) => (
-              <option key={tz} value={tz}>
-                {tz}
-              </option>
-            ))}
-          </select>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            {memberSince}
+          </span>
         </div>
       </div>
     </div>
