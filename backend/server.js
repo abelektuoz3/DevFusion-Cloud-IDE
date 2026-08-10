@@ -175,4 +175,13 @@ const server = app.listen(PORT, () => {
 const TerminalWebSocketServer = require("./src/websocket/terminalServer");
 const wsServer = new TerminalWebSocketServer(server);
 
-module.exports = app;
+// Clean up idle terminal sessions every 30 minutes to prevent memory leaks
+const terminalManager = require("./src/services/terminal/terminalManager");
+setInterval(() => {
+  const cleaned = terminalManager.cleanupIdleSessions(30 * 60 * 1000);
+  if (cleaned > 0) {
+    console.log(`[Cleanup] Removed ${cleaned} idle terminal session(s)`);
+  }
+}, 30 * 60 * 1000);
+
+module.exports = app;

@@ -80,7 +80,8 @@ class TerminalManager {
     let cleaned = 0;
 
     for (const [sessionId, session] of this.sessions) {
-      if (now - session.createdAt > maxIdleTime) {
+      const lastSeen = session.lastActivity || session.createdAt;
+      if (now - lastSeen > maxIdleTime) {
         this.closeSession(sessionId);
         cleaned++;
       }

@@ -1,4 +1,4 @@
-const { spawn } = require('child_process');
+const pty = require('node-pty');
 const { v4: uuidv4 } = require('uuid');
 
 class PTYSession {
@@ -8,63 +8,55 @@ class PTYSession {
     this.userId = userId;
     this.cols = cols;
     this.rows = rows;
-    this.process = null;
+    this.ptyProcess = null;
     this.isAlive = false;
     this.createdAt = Date.now();
+    this.lastActivity = Date.now();
     this.outputCallback = null;
     this.exitCallback = null;
   }
 
   start(workspacePath) {
     try {
-      // Use PowerShell on Windows, bash on Linux/Mac
-      const shell = process.platform === 'win32' ? 'powershell.exe' : '/bin/bash';
-      
+      // bash on Linux/Mac (Render runs Linux), powershell on Windows (local dev)
+      const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
+
       console.log(`[PTY] Starting shell: ${shell} in ${workspacePath}`);
-      
-      this.process = spawn(shell, [], {
+
+      this.ptyProcess = pty.spawn(shell, [], {
+        name: 'xterm-256color',
+        cols: this.cols,
+        rows: this.rows,
         cwd: workspacePath,
         env: {
           ...process.env,
           TERM: 'xterm-256color',
           COLORTERM: 'truecolor',
+          // Force interactive mode prompts
+          PS1: '\\u@devfusion:\\w\\$ ',
         },
-        windowsHide: false,
       });
 
       this.isAlive = true;
 
-      // Handle stdout
-      this.process.stdout.on('data', (data) => {
+      // node-pty fires a single onData event for all output (stdout + stderr merged via PTY)
+      this.ptyProcess.onData((data) => {
+        this.lastActivity = Date.now();
         if (this.outputCallback) {
-          this.outputCallback(data.toString());
+          this.outputCallback(data);
         }
       });
 
-      // Handle stderr
-      this.process.stderr.on('data', (data) => {
-        if (this.outputCallback) {
-          this.outputCallback(data.toString());
-        }
-      });
-
-      // Handle exit
-      this.process.on('exit', (code, signal) => {
+      this.ptyProcess.onExit(({ exitCode, signal }) => {
         this.isAlive = false;
-        console.log(`[PTY] Session ${this.sessionId} exited with code ${code}`);
+        console.log(`[PTY] Session ${this.sessionId} exited with code ${exitCode}`);
         if (this.exitCallback) {
-          this.exitCallback({ exitCode: code, signal });
+          this.exitCallback({ exitCode, signal });
         }
       });
 
-      // Handle errors
-      this.process.on('error', (error) => {
-        console.error(`[PTY] Session ${this.sessionId} error:`, error);
-        this.isAlive = false;
-      });
-
-      console.log(`[PTY] Session ${this.sessionId} started for workspace ${this.workspaceId}`);
-      return this.process;
+      console.log(`[PTY] Session ${this.sessionId} started (pid: ${this.ptyProcess.pid}) for workspace ${this.workspaceId}`);
+      return this.ptyProcess;
     } catch (error) {
       console.error('[PTY] Failed to start session:', error);
       throw error;
@@ -72,36 +64,31 @@ class PTYSession {
   }
 
   write(data) {
-    if (this.process && this.isAlive && this.process.stdin) {
-      this.process.stdin.write(data);
+    if (this.ptyProcess && this.isAlive) {
+      this.lastActivity = Date.now();
+      this.ptyProcess.write(data);
     }
   }
 
   resize(cols, rows) {
     this.cols = cols;
     this.rows = rows;
-    // Note: Windows doesn't support dynamic resize via child_process
-    // This is kept for compatibility
+    if (this.ptyProcess && this.isAlive) {
+      try {
+        this.ptyProcess.resize(cols, rows);
+      } catch (err) {
+        console.warn(`[PTY] Resize error for session ${this.sessionId}:`, err.message);
+      }
+    }
   }
 
   kill() {
-    if (this.process && this.isAlive) {
+    if (this.ptyProcess && this.isAlive) {
       try {
-        // On Windows, use taskkill for better cleanup
-        if (process.platform === 'win32') {
-          const { exec } = require('child_process');
-          exec(`taskkill /pid ${this.process.pid} /T /F`, (error) => {
-            if (error) {
-              console.error('[PTY] Error killing process:', error);
-            }
-          });
-        } else {
-          this.process.kill('SIGTERM');
-        }
+        this.ptyProcess.kill();
       } catch (error) {
         console.error('[PTY] Error killing session:', error);
       }
-      
       this.isAlive = false;
       console.log(`[PTY] Session ${this.sessionId} killed`);
     }
@@ -124,7 +111,8 @@ class PTYSession {
       cols: this.cols,
       rows: this.rows,
       createdAt: this.createdAt,
-      pid: this.process ? this.process.pid : null,
+      lastActivity: this.lastActivity,
+      pid: this.ptyProcess ? this.ptyProcess.pid : null,
     };
   }
 }
