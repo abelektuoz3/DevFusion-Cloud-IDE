@@ -113,9 +113,7 @@ const Explorer = ({ folderTree, files, onOpenFile, workspaceId }) => {
       sass: <FaCss3Alt className="text-pink-500" size={16} />,
       less: <FaCss3Alt className="text-blue-400" size={16} />,
 
-      // React
-      jsx: <FaReact className="text-cyan-400" size={16} />,
-      tsx: <FaReact className="text-cyan-400" size={16} />,
+      // React (jsx/tsx defined above)
 
       // Vue
       vue: <FaVuejs className="text-green-500" size={16} />,

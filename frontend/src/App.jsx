@@ -99,6 +99,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        {/* ✅ Terminal is integrated into WorkspaceEditor */}
         <Route
           path="/workspace/:workspaceId"
           element={

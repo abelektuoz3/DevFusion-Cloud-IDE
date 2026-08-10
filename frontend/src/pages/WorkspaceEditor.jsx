@@ -1,7 +1,15 @@
 // frontend/src/pages/WorkspaceEditor.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FiArrowLeft, FiMenu, FiXCircle, FiFolder } from "react-icons/fi";
+import { 
+  FiArrowLeft, 
+  FiMenu, 
+  FiXCircle, 
+  FiFolder,
+  FiTerminal,
+  FiChevronDown,
+  FiChevronUp,
+} from "react-icons/fi";
 import { useWorkspace } from "../context/WorkspaceContext";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -9,6 +17,7 @@ import Explorer from "../components/explorer/Explorer";
 import EditorTabs from "../components/editor/EditorTabs";
 import StatusBar from "../components/editor/StatusBar";
 import SearchOverlay from "../components/search/SearchOverlay";
+import { TerminalPanel } from "../components/terminal/TerminalPanel";
 import toast from "react-hot-toast";
 
 const WorkspaceEditor = () => {
@@ -33,6 +42,8 @@ const WorkspaceEditor = () => {
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isExplorerOpen, setIsExplorerOpen] = useState(true);
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
+  const [terminalHeight, setTerminalHeight] = useState(300);
 
   useEffect(() => {
     if (workspaceId) {
@@ -40,14 +51,13 @@ const WorkspaceEditor = () => {
     }
   }, [workspaceId]);
 
-  // ✅ Handle content change - ONLY update content, NO autosave
+  // Handle content change - ONLY update content, NO autosave
   const handleContentChange = (value) => {
     if (!activeTab) return;
-    // Only update the tab content - mark as unsaved
     updateTabContent(activeTab, value);
   };
 
-  // ✅ Handle save file
+  // Handle save file
   const handleSaveFile = async (fileId, content) => {
     try {
       const success = await saveFile(fileId, content);
@@ -59,7 +69,7 @@ const WorkspaceEditor = () => {
     }
   };
 
-  // ✅ Warn before closing browser with unsaved changes
+  // Warn before closing browser with unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       const hasUnsaved = openTabs.some((tab) => !tab.isSaved);
@@ -108,11 +118,16 @@ const WorkspaceEditor = () => {
         e.preventDefault();
         setIsExplorerOpen(!isExplorerOpen);
       }
+      // Ctrl+` : Toggle terminal (VS Code style)
+      if ((e.ctrlKey || e.metaKey) && e.key === "`") {
+        e.preventDefault();
+        setIsTerminalOpen(!isTerminalOpen);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeTab, openTabs, isSearchOpen, isExplorerOpen, closeTab]);
+  }, [activeTab, openTabs, isSearchOpen, isExplorerOpen, closeTab, isTerminalOpen]);
 
   if (loading) {
     return (
@@ -166,6 +181,20 @@ const WorkspaceEditor = () => {
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          {/* Terminal Toggle Button */}
+          <button
+            onClick={() => setIsTerminalOpen(!isTerminalOpen)}
+            className={`p-1.5 rounded-lg transition flex items-center space-x-1 ${
+              isTerminalOpen
+                ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"
+                : "hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-400"
+            }`}
+            title="Toggle Terminal (Ctrl+`)">
+            <FiTerminal size={18} />
+            <span className="text-xs font-medium hidden sm:inline">
+              {isTerminalOpen ? "Terminal" : "Open Terminal"}
+            </span>
+          </button>
           <button
             onClick={() => setIsExplorerOpen(!isExplorerOpen)}
             className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition"
@@ -182,31 +211,79 @@ const WorkspaceEditor = () => {
         </div>
       </div>
 
-      {/* Main Layout */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Explorer */}
-        {isExplorerOpen && (
-          <div className="w-64 flex-shrink-0 border-r border-gray-200 dark:border-slate-700 overflow-hidden">
-            <Explorer
-              folderTree={folderTree}
-              files={files}
-              onOpenFile={openFile}
-              workspaceId={workspaceId}
+      {/* Main Layout with Terminal */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Editor + Explorer Row */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Explorer */}
+          {isExplorerOpen && (
+            <div className="w-64 flex-shrink-0 border-r border-gray-200 dark:border-slate-700 overflow-hidden">
+              <Explorer
+                folderTree={folderTree}
+                files={files}
+                onOpenFile={openFile}
+                workspaceId={workspaceId}
+              />
+            </div>
+          )}
+
+          {/* Editor Area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <EditorTabs
+              tabs={openTabs}
+              activeTab={activeTab}
+              onCloseTab={closeTab}
+              onTabChange={setActiveTab}
+              onContentChange={handleContentChange}
+              onSaveFile={handleSaveFile}
             />
           </div>
-        )}
-
-        {/* Editor Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <EditorTabs
-            tabs={openTabs}
-            activeTab={activeTab}
-            onCloseTab={closeTab}
-            onTabChange={setActiveTab}
-            onContentChange={handleContentChange}
-            onSaveFile={handleSaveFile}
-          />
         </div>
+
+        {/* Terminal Panel - Bottom */}
+        {isTerminalOpen && (
+          <div 
+            className="flex-shrink-0 border-t border-gray-200 dark:border-slate-700 bg-[#1e1e1e]"
+            style={{ height: `${terminalHeight}px` }}
+          >
+            {/* Terminal Header */}
+            <div className="flex items-center justify-between px-4 py-1 bg-[#2d2d2d] border-b border-gray-700">
+              <div className="flex items-center space-x-2">
+                <FiTerminal className="text-green-400" size={14} />
+                <span className="text-xs text-gray-300 font-medium">TERMINAL</span>
+                <span className="text-xs text-gray-500">|</span>
+                <span className="text-xs text-gray-400">bash</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setTerminalHeight(Math.min(600, terminalHeight + 50))}
+                  className="text-gray-500 hover:text-gray-300 transition"
+                  title="Increase height"
+                >
+                  <FiChevronUp size={14} />
+                </button>
+                <button
+                  onClick={() => setTerminalHeight(Math.max(150, terminalHeight - 50))}
+                  className="text-gray-500 hover:text-gray-300 transition"
+                  title="Decrease height"
+                >
+                  <FiChevronDown size={14} />
+                </button>
+                <button
+                  onClick={() => setIsTerminalOpen(false)}
+                  className="text-gray-500 hover:text-red-400 transition ml-2"
+                  title="Close Terminal"
+                >
+                  <FiXCircle size={14} />
+                </button>
+              </div>
+            </div>
+            {/* Terminal Content */}
+            <div className="w-full h-full" style={{ height: `calc(100% - 28px)` }}>
+              <TerminalPanel workspaceId={workspaceId} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Status Bar */}
@@ -215,6 +292,8 @@ const WorkspaceEditor = () => {
         fileCount={files?.length || 0}
         activeTab={activeTab}
         tabs={openTabs}
+        isTerminalOpen={isTerminalOpen}
+        onToggleTerminal={() => setIsTerminalOpen(!isTerminalOpen)}
       />
 
       {/* Search Overlay */}

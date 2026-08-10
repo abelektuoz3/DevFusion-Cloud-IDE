@@ -84,7 +84,10 @@ const notificationRoutes = require("./routes/notifications");
 const searchRoutes = require("./routes/search");
 const projectRoutes = require("./routes/projects");
 const runRoutes = require("./routes/run");
-const profileRoutes = require("./routes/profile"); // ✅ NEW
+const profileRoutes = require("./routes/profile");
+
+// V3 Terminal Routes
+const terminalRoutes = require("./src/routes/terminal.routes");
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -95,14 +98,17 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/run", runRoutes);
-app.use("/api/profile", profileRoutes); // ✅ NEW
+app.use("/api/profile", profileRoutes);
+
+// V3 Terminal Routes
+app.use("/", terminalRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.json({
     status: "OK",
-    message: "DevFusion Workspace v2 API is running",
-    version: "2.0.0",
+    message: "DevFusion Workspace v3 API is running",
+    version: "3.0.0",
     timestamp: new Date().toISOString(),
   });
 });
@@ -110,8 +116,8 @@ app.get("/health", (req, res) => {
 // Root route
 app.get("/", (req, res) => {
   res.json({
-    message: "DevFusion Workspace v2 API",
-    version: "2.0.0",
+    message: "DevFusion Workspace v3 API",
+    version: "3.0.0",
     status: "Running",
     endpoints: {
       auth: "/api/auth",
@@ -122,7 +128,14 @@ app.get("/", (req, res) => {
       search: "/api/search",
       projects: "/api/projects",
       run: "/api/run",
-      profile: "/api/profile", // ✅ NEW
+      profile: "/api/profile",
+      // V3 Terminal Endpoints
+      terminal: {
+        create: "POST /api/workspaces/:workspaceId/terminal",
+        list: "GET /api/workspaces/:workspaceId/terminal",
+        close: "DELETE /api/terminal/:sessionId",
+        websocket: "WS /api/terminal/ws?sessionId=:sessionId",
+      },
     },
   });
 });
@@ -150,10 +163,25 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+// Create HTTP server and attach WebSocket
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📡 Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || "Not set"}`);
+  console.log(`🔌 WebSocket server available at ws://localhost:${PORT}/api/terminal/ws`);
 });
+
+// Initialize WebSocket server after HTTP server is created
+const TerminalWebSocketServer = require("./src/websocket/terminalServer");
+const wsServer = new TerminalWebSocketServer(server);
+
+// Clean up idle terminal sessions every 30 minutes to prevent memory leaks
+const terminalManager = require("./src/services/terminal/terminalManager");
+setInterval(() => {
+  const cleaned = terminalManager.cleanupIdleSessions();
+  if (cleaned > 0) {
+    console.log(`[Cleanup] Removed ${cleaned} idle terminal session(s)`);
+  }
+}, 30 * 60 * 1000);
 
 module.exports = app;
