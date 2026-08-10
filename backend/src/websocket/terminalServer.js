@@ -1,5 +1,4 @@
 const WebSocket = require('ws');
-const url = require('url');
 const terminalManager = require('../services/terminal/terminalManager');
 
 class TerminalWebSocketServer {
@@ -15,8 +14,21 @@ class TerminalWebSocketServer {
 
   setupWebSocket() {
     this.wss.on('connection', (ws, req) => {
-      const queryParams = url.parse(req.url, true).query;
-      const sessionId = queryParams.sessionId;
+      // Parse query parameters using WHATWG URL API (no deprecation warning)
+      const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+      const sessionId = parsedUrl.searchParams.get('sessionId');
+      const token = parsedUrl.searchParams.get('token');
+
+      // Validate token
+      if (!token) {
+        console.log('[WebSocket] ❌ No token provided');
+        ws.close(1008, 'Authentication required');
+        return;
+      }
+
+      // TODO: Verify token with your auth middleware
+      // For now, we'll just check if it exists
+      // In production, you should validate the token with your auth system
 
       if (!sessionId) {
         ws.close(1008, 'Session ID required');

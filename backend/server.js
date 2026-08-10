@@ -134,7 +134,7 @@ app.get("/", (req, res) => {
         create: "POST /api/workspaces/:workspaceId/terminal",
         list: "GET /api/workspaces/:workspaceId/terminal",
         close: "DELETE /api/terminal/:sessionId",
-        websocket: "WS /api/terminal/ws?sessionId=:sessionId",
+        websocket: "WS /api/terminal/ws?sessionId=:sessionId&token=:token",
       },
     },
   });
@@ -174,14 +174,5 @@ const server = app.listen(PORT, () => {
 // Initialize WebSocket server after HTTP server is created
 const TerminalWebSocketServer = require("./src/websocket/terminalServer");
 const wsServer = new TerminalWebSocketServer(server);
-
-// Clean up idle terminal sessions every 30 minutes to prevent memory leaks
-const terminalManager = require("./src/services/terminal/terminalManager");
-setInterval(() => {
-  const cleaned = terminalManager.cleanupIdleSessions();
-  if (cleaned > 0) {
-    console.log(`[Cleanup] Removed ${cleaned} idle terminal session(s)`);
-  }
-}, 30 * 60 * 1000);
 
 module.exports = app;

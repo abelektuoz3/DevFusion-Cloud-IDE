@@ -4,19 +4,13 @@ import { FitAddon } from 'xterm-addon-fit';
 import { WebLinksAddon } from 'xterm-addon-web-links';
 import 'xterm/css/xterm.css';
 
-// Derive backend base URL from env (no /api suffix needed here)
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-// WebSocket URL: https → wss, http → ws
-const WS_BASE = API_BASE.replace(/^https/, 'wss').replace(/^http/, 'ws');
-
 export const TerminalPanel = ({ workspaceId }) => {
   const terminalRef = useRef(null);
   const [terminal, setTerminal] = useState(null);
   const [fitAddon] = useState(() => new FitAddon());
   const wsRef = useRef(null);
-  // Use ref (not state) so cleanup callback always has the latest sessionId
-  const sessionIdRef = useRef(null);
   const [sessionId, setSessionId] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   // Initialize terminal
   useEffect(() => {
@@ -72,30 +66,42 @@ export const TerminalPanel = ({ workspaceId }) => {
 
     const initializeTerminal = async () => {
       try {
-        // Create terminal session — uses env-based URL so works on Vercel→Render
+        // Get the auth token from localStorage
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/terminal`, {
+        
+        if (!token) {
+          terminal.writeln('\x1b[1;31m× No authentication token found. Please login again.\x1b[0m');
+          return;
+        }
+
+        // Get the backend URL from environment or use default
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        
+        // Create terminal session with authentication
+        const response = await fetch(`${backendUrl}/api/workspaces/${workspaceId}/terminal`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({ cols: 120, rows: 30 }),
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        sessionIdRef.current = data.sessionId;  // store in ref for cleanup
         setSessionId(data.sessionId);
 
-        // Connect WebSocket — wss:// in production, ws:// in dev
-        const ws = new WebSocket(`${WS_BASE}/api/terminal/ws?sessionId=${data.sessionId}`);
+        // Connect WebSocket with token as query parameter
+        const wsUrl = `${backendUrl.replace('http', 'ws')}/api/terminal/ws?sessionId=${data.sessionId}&token=${token}`;
+        const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 
         ws.onopen = () => {
+          setIsConnected(true);
           terminal.writeln('\x1b[1;32m✓ Connected to terminal\x1b[0m');
           terminal.writeln('\x1b[1;33mType commands to begin...\x1b[0m');
         };
@@ -119,6 +125,7 @@ export const TerminalPanel = ({ workspaceId }) => {
         };
 
         ws.onclose = () => {
+          setIsConnected(false);
           terminal.writeln('\x1b[1;31m× Disconnected from terminal\x1b[0m');
         };
 
@@ -148,10 +155,15 @@ export const TerminalPanel = ({ workspaceId }) => {
       if (wsRef.current) {
         wsRef.current.close();
       }
-      // Use ref value — sessionId state may be stale in this closure
-      if (sessionIdRef.current) {
-        fetch(`${API_BASE}/api/terminal/${sessionIdRef.current}`, { 
-          method: 'DELETE' 
+      if (sessionId) {
+        const token = localStorage.getItem('token');
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        
+        fetch(`${backendUrl}/api/terminal/${sessionId}`, { 
+          method: 'DELETE',
+          headers: {
+            'Authorization': token ? `Bearer ${token}` : '',
+          },
         }).catch(console.error);
       }
     };
