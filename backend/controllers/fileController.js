@@ -1,6 +1,7 @@
 // backend/controllers/fileController.js
 const File = require("../models/File");
 const Folder = require("../models/Folder");
+const { syncSingleFileToDisk, removeSingleFileFromDisk } = require("../src/services/terminal/workspaceSync");
 
 // @desc    Create a file
 // @route   POST /api/files/:workspaceId
@@ -45,6 +46,9 @@ exports.createFile = async (req, res) => {
 
     const file = new File(fileData);
     await file.save();
+
+    // Sync to terminal disk
+    syncSingleFileToDisk(workspaceId, file.path, file.content);
 
     res.status(201).json({
       message: "File created successfully",
@@ -103,6 +107,9 @@ exports.updateFileContent = async (req, res) => {
     file.isSaved = true;
     file.lastModified = new Date();
     await file.save();
+
+    // Sync to terminal disk
+    syncSingleFileToDisk(file.workspace.toString(), file.path, file.content);
 
     res.json({
       message: "File saved successfully",
@@ -175,6 +182,9 @@ exports.deleteFile = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
+    // Remove from terminal disk
+    removeSingleFileFromDisk(file.workspace.toString(), file.path);
+
     await file.deleteOne();
 
     res.json({ message: "File deleted successfully" });
@@ -204,6 +214,9 @@ exports.autosaveFile = async (req, res) => {
     file.isSaved = true;
     file.lastModified = new Date();
     await file.save();
+
+    // Sync to terminal disk
+    syncSingleFileToDisk(file.workspace.toString(), file.path, file.content);
 
     res.json({
       message: "File autosaved",

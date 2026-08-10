@@ -2,12 +2,14 @@ const pty = require('node-pty');
 const { v4: uuidv4 } = require('uuid');
 
 class PTYSession {
-  constructor(workspaceId, userId, cols = 120, rows = 30) {
+  constructor(workspaceId, userId, cols = 120, rows = 30, username = 'user', workspaceName = 'project') {
     this.sessionId = uuidv4();
     this.workspaceId = workspaceId;
     this.userId = userId;
     this.cols = cols;
     this.rows = rows;
+    this.username = username || 'user';
+    this.workspaceName = workspaceName || 'workspace';
     this.ptyProcess = null;
     this.isAlive = false;
     this.createdAt = Date.now();
@@ -18,28 +20,39 @@ class PTYSession {
 
   start(workspacePath) {
     try {
-      // bash on Linux/Mac (Render runs Linux), powershell on Windows (local dev)
-      const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
+      const isWin = process.platform === 'win32';
+      const shell = isWin ? 'powershell.exe' : 'bash';
 
-      console.log(`[PTY] Starting shell: ${shell} in ${workspacePath}`);
+      console.log(`[PTY] Starting shell: ${shell} in ${workspacePath} for user: ${this.username}`);
 
-      this.ptyProcess = pty.spawn(shell, [], {
+      // Git Bash / Antigravity styled PS1 prompt:
+      // user@DevFusion MINGW64 ~/workspaceName (main)
+      // $ 
+      const displayUser = this.username;
+      const displayHost = 'DevFusion';
+      
+      const ps1Prompt = `\\[\\033[1;32m\\]${displayUser}@${displayHost}\\[\\033[0m\\] \\[\\033[1;35m\\]MINGW64\\[\\033[0m\\] \\[\\033[1;33m\\]~/${this.workspaceName}\\[\\033[0m\\] \\[\\033[1;36m\\](main)\\[\\033[0m\\]\\n\\$ `;
+
+      const spawnArgs = isWin ? [] : ['-i'];
+
+      this.ptyProcess = pty.spawn(shell, spawnArgs, {
         name: 'xterm-256color',
         cols: this.cols,
         rows: this.rows,
         cwd: workspacePath,
         env: {
           ...process.env,
+          HOME: workspacePath,
           TERM: 'xterm-256color',
           COLORTERM: 'truecolor',
-          // Force interactive mode prompts
-          PS1: '\\u@devfusion:\\w\\$ ',
+          PS1: ps1Prompt,
+          PROMPT_COMMAND: `export PS1="${ps1Prompt}"`,
         },
       });
 
       this.isAlive = true;
 
-      // node-pty fires a single onData event for all output (stdout + stderr merged via PTY)
+      // Handle output data
       this.ptyProcess.onData((data) => {
         this.lastActivity = Date.now();
         if (this.outputCallback) {
@@ -47,6 +60,7 @@ class PTYSession {
         }
       });
 
+      // Handle session exit
       this.ptyProcess.onExit(({ exitCode, signal }) => {
         this.isAlive = false;
         console.log(`[PTY] Session ${this.sessionId} exited with code ${exitCode}`);
@@ -107,6 +121,8 @@ class PTYSession {
       sessionId: this.sessionId,
       workspaceId: this.workspaceId,
       userId: this.userId,
+      username: this.username,
+      workspaceName: this.workspaceName,
       isAlive: this.isAlive,
       cols: this.cols,
       rows: this.rows,

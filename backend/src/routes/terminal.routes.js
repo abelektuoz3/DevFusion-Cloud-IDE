@@ -1,40 +1,38 @@
 const express = require('express');
 const router = express.Router();
-const terminalManager = require('../services/terminal/terminalManager');
-const fs = require('fs');
 const path = require('path');
-
-// Middleware to verify token (simplified - you should use your actual auth middleware)
-const verifyToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'No token provided' });
-  }
-  // In production, you should validate the token here
-  // For now, we'll just pass through
-  next();
-};
+const terminalManager = require('../services/terminal/terminalManager');
+const { syncWorkspaceToDisk } = require('../services/terminal/workspaceSync');
+const { protect } = require('../../middleware/auth');
+const Workspace = require('../../models/Workspace');
 
 // Create terminal session
-router.post('/api/workspaces/:workspaceId/terminal', verifyToken, async (req, res) => {
+router.post('/api/workspaces/:workspaceId/terminal', protect, async (req, res) => {
   try {
     const { workspaceId } = req.params;
-    const userId = req.user?.id || 'anonymous';
+    const userId = req.user ? req.user._id.toString() : 'anonymous';
+    const username = req.user ? (req.user.username || 'user') : 'user';
     const { cols = 120, rows = 30 } = req.body;
 
-    // Create workspace directory if it doesn't exist
-    const workspacePath = path.join(__dirname, '../../workspaces', workspaceId);
-    if (!fs.existsSync(workspacePath)) {
-      fs.mkdirSync(workspacePath, { recursive: true });
-      fs.writeFileSync(path.join(workspacePath, 'README.md'), `# Workspace ${workspaceId}\n\nCreated at: ${new Date().toISOString()}`);
-    }
+    // Get workspace details from DB
+    const workspace = await Workspace.findById(workspaceId);
+    const workspaceName = workspace ? workspace.name : 'workspace';
 
+    // Workspace path on server disk
+    const workspacePath = path.join(__dirname, '../../workspaces', workspaceId);
+
+    // Sync all MongoDB files & folders to server disk before starting shell
+    await syncWorkspaceToDisk(workspaceId, workspacePath);
+
+    // Spawn PTY terminal session
     const session = terminalManager.createSession(
       workspaceId,
       userId,
       workspacePath,
       cols,
-      rows
+      rows,
+      username,
+      workspaceName
     );
 
     res.status(201).json({
@@ -55,7 +53,7 @@ router.post('/api/workspaces/:workspaceId/terminal', verifyToken, async (req, re
 });
 
 // Get terminal sessions for workspace
-router.get('/api/workspaces/:workspaceId/terminal', verifyToken, async (req, res) => {
+router.get('/api/workspaces/:workspaceId/terminal', protect, async (req, res) => {
   try {
     const { workspaceId } = req.params;
     const sessions = terminalManager.getWorkspaceSessions(workspaceId);
@@ -73,7 +71,7 @@ router.get('/api/workspaces/:workspaceId/terminal', verifyToken, async (req, res
 });
 
 // Close terminal session
-router.delete('/api/terminal/:sessionId', verifyToken, async (req, res) => {
+router.delete('/api/terminal/:sessionId', protect, async (req, res) => {
   try {
     const { sessionId } = req.params;
     const closed = terminalManager.closeSession(sessionId);

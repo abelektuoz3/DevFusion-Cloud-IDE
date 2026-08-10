@@ -6,14 +6,14 @@ class TerminalManager {
     this.workspaceSessions = new Map();
   }
 
-  createSession(workspaceId, userId, workspacePath, cols = 120, rows = 30) {
+  createSession(workspaceId, userId, workspacePath, cols = 120, rows = 30, username = 'user', workspaceName = 'workspace') {
     // Create workspace session tracking if not exists
     if (!this.workspaceSessions.has(workspaceId)) {
       this.workspaceSessions.set(workspaceId, new Set());
     }
 
     // Create new PTY session
-    const session = new PTYSession(workspaceId, userId, cols, rows);
+    const session = new PTYSession(workspaceId, userId, cols, rows, username, workspaceName);
     session.start(workspacePath);
 
     // Store session
