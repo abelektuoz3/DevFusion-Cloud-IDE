@@ -35,9 +35,18 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
-  const loadWorkspace = async (workspaceId) => {
+  /**
+   * Load a workspace.
+   * @param {string} workspaceId
+   * @param {object} options
+   * @param {boolean} options.silent - If true, skips loading spinner and toasts.
+   *                                    Used for background refreshes (e.g., after fs-change).
+   */
+  const loadWorkspace = async (workspaceId, options = {}) => {
+    const { silent = false } = options;
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
+
       const response = await workspaceAPI.getById(workspaceId);
       const { workspace, folderTree, files } = response.data;
       setCurrentWorkspace(workspace);
@@ -46,10 +55,46 @@ export const WorkspaceProvider = ({ children }) => {
       return { workspace, folderTree, files };
     } catch (error) {
       console.error("Load workspace error:", error);
-      toast.error("Failed to load workspace");
+      if (!silent) toast.error("Failed to load workspace");
       return null;
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
+    }
+  };
+
+  /**
+   * Silent refresh — pulls fresh folder tree + files from server without
+   * disrupting the UI. Used when the terminal (or another client) modifies
+   * the workspace on disk. Preserves open tabs and active tab.
+   */
+  const refreshWorkspace = async (workspaceId) => {
+    if (!workspaceId) return;
+    try {
+      const response = await workspaceAPI.getById(workspaceId);
+      const { workspace, folderTree, files } = response.data;
+
+      setCurrentWorkspace(workspace);
+      setFolderTree(folderTree);
+      setFiles(files || []);
+
+      // If any open tab's file was deleted (no longer exists in files),
+      // close that tab to avoid stale references.
+      const fileIds = new Set((files || []).map((f) => f._id));
+      setOpenTabs((prevTabs) => {
+        const survivingTabs = prevTabs.filter((tab) => fileIds.has(tab.id));
+        // If active tab was removed, switch to the last remaining tab
+        if (activeTab && !fileIds.has(activeTab)) {
+          setActiveTab(
+            survivingTabs.length > 0 ?
+              survivingTabs[survivingTabs.length - 1].id
+            : null,
+          );
+        }
+        return survivingTabs;
+      });
+    } catch (error) {
+      console.error("Silent refresh error:", error);
+      // Intentionally no toast — this is a background operation
     }
   };
 
@@ -123,7 +168,6 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
-  // ✅ Rename folder
   const renameFolder = async (folderId, newName) => {
     try {
       const response = await folderAPI.rename(folderId, { name: newName });
@@ -136,7 +180,6 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
-  // ✅ Delete folder
   const deleteFolder = async (folderId) => {
     try {
       await folderAPI.delete(folderId);
@@ -173,21 +216,18 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
-  // ✅ Save file - manual save only
   const saveFile = async (fileId, content) => {
     try {
       console.log("📝 Saving file:", fileId);
       const response = await fileAPI.update(fileId, { content });
       console.log("✅ File saved:", response.data.file);
 
-      // Update the tabs - mark as saved
       setOpenTabs((prevTabs) =>
         prevTabs.map((tab) =>
           tab.id === fileId ? { ...tab, content, isSaved: true } : tab,
         ),
       );
 
-      // Update the files list
       setFiles((prevFiles) =>
         prevFiles.map((file) =>
           file._id === fileId ? { ...file, content, isSaved: true } : file,
@@ -203,7 +243,6 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
-  // ✅ Update tab content - mark as unsaved
   const updateTabContent = (tabId, content) => {
     setOpenTabs((prevTabs) =>
       prevTabs.map((tab) =>
@@ -212,17 +251,14 @@ export const WorkspaceProvider = ({ children }) => {
     );
   };
 
-  // ✅ Rename file
   const renameFile = async (fileId, newName) => {
     try {
       const response = await fileAPI.rename(fileId, { name: newName });
-      // Update open tabs
       setOpenTabs((prevTabs) =>
         prevTabs.map((tab) =>
           tab.id === fileId ? { ...tab, name: newName } : tab,
         ),
       );
-      // Update files list
       setFiles((prevFiles) =>
         prevFiles.map((file) =>
           file._id === fileId ? { ...file, name: newName } : file,
@@ -237,7 +273,6 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
-  // ✅ Delete file
   const deleteFile = async (fileId) => {
     try {
       await fileAPI.delete(fileId);
@@ -312,6 +347,7 @@ export const WorkspaceProvider = ({ children }) => {
     // Workspace operations
     loadWorkspaces,
     loadWorkspace,
+    refreshWorkspace, // ← NEW: silent refresh
     createWorkspace,
     updateWorkspace,
     deleteWorkspace,
