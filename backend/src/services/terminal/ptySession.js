@@ -55,18 +55,34 @@ class PTYSession {
         `[PTY] Starting shell: ${shell} in ${workspacePath} for user: ${this.username}`,
       );
 
-      // VS Code / Git Bash style prompt
-      // \u = username (from $USER env var)
-      // \h = hostname (hardcoded to DevFusion below)
-      // \w = working directory (~ replaces HOME)
-      // $(__git_ps1 " (%s)") = git branch if inside a repo
+      // Escape username for safe use in bash prompt
+      const safeUser = this.username.replace(/[^a-zA-Z0-9_-]/g, "");
+
+      // VS Code / Git Bash style prompt:
+      //   abel@DevFusion MINGW64 ~/m (main)
+      //   $
+      // Note: __git_ps1 is only available in Git Bash — we define a fallback
+      // that shows "(main)" if the folder is a git repo, otherwise nothing.
       const ps1 = [
-        "\\[\\e[1;32m\\]\\u@DevFusion\\[\\e[0m\\]", // green: user@DevFusion
-        "\\[\\e[1;35m\\]MINGW64\\[\\e[0m\\]", // magenta: MINGW64
-        "\\[\\e[1;33m\\]\\w\\[\\e[0m\\]", // yellow: working dir
-        '\\[\\e[1;36m\\]$(__git_ps1 " (%s)")\\[\\e[0m\\]', // cyan: git branch
-        "\\n\\$ ", // newline + $ or #
+        "\\[\\e[1;32m\\]" + safeUser + "@DevFusion\\[\\e[0m\\]",
+        "\\[\\e[1;35m\\]MINGW64\\[\\e[0m\\]",
+        "\\[\\e[1;33m\\]\\w\\[\\e[0m\\]",
+        "\\[\\e[1;36m\\]$(__devfusion_git_branch)\\[\\e[0m\\]",
+        "\\n\\$ ",
       ].join(" ");
+
+      // Define a portable git-branch helper (works even without __git_ps1)
+      const gitHelper = `
+__devfusion_git_branch() {
+  if [ -d .git ] || git rev-parse --git-dir > /dev/null 2>&1; then
+    local branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
+    if [ -n "$branch" ]; then
+      echo " ($branch)"
+    fi
+  fi
+}
+export -f __devfusion_git_branch 2>/dev/null || true
+`;
 
       const env = {
         ...process.env,
@@ -75,8 +91,11 @@ class PTYSession {
         COLORTERM: "truecolor",
         PS1: ps1,
         PROMPT_COMMAND: `export PS1='${ps1}'`,
-        USER: this.username, // ← makes \u show the logged-in username
-        LOGNAME: this.username, // ← backup var, some shells check this
+        // Force the username in the shell — overrides system $USER
+        USER: safeUser,
+        LOGNAME: safeUser,
+        // Also inject a var we can reference if needed
+        DEVFUSION_USER: safeUser,
         MSYSTEM: "MINGW64",
       };
 
@@ -89,6 +108,14 @@ class PTYSession {
       });
 
       this.isAlive = true;
+
+      // Inject the git helper right after bash starts
+      // (env vars don't define shell functions, so we send it as input)
+      setTimeout(() => {
+        if (this.ptyProcess && this.isAlive) {
+          this.ptyProcess.write(gitHelper + "\n");
+        }
+      }, 300);
 
       this.ptyProcess.onData((data) => {
         this.lastActivity = Date.now();
