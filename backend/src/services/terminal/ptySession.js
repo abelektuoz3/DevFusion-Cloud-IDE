@@ -1,5 +1,7 @@
 const pty = require("node-pty");
 const { v4: uuidv4 } = require("uuid");
+const fs = require("fs");
+const path = require("path");
 
 class PTYSession {
   constructor(
@@ -28,56 +30,57 @@ class PTYSession {
   start(workspacePath) {
     try {
       const isWin = process.platform === "win32";
-      // Use bash (from Git for Windows) if available, otherwise fall back to powershell
-      const shell = isWin ? "powershell.exe" : "bash";
+
+      // Find bash: on Windows, prefer Git Bash; on Linux/Mac, use system bash
+      let shell;
+      let shellArgs;
+
+      if (isWin) {
+        const gitBashPaths = [
+          "C:\\Program Files\\Git\\bin\\bash.exe",
+          "C:\\Program Files (x86)\\Git\\bin\\bash.exe",
+          process.env.ProgramFiles ?
+            path.join(process.env.ProgramFiles, "Git", "bin", "bash.exe")
+          : null,
+        ].filter(Boolean);
+
+        shell = gitBashPaths.find((p) => fs.existsSync(p)) || "bash.exe";
+        shellArgs = ["--login", "-i"];
+      } else {
+        shell = "/bin/bash";
+        shellArgs = ["--login", "-i"];
+      }
 
       console.log(
         `[PTY] Starting shell: ${shell} in ${workspacePath} for user: ${this.username}`,
       );
 
-      // Build environment for the shell
+      // VS Code / Git Bash style prompt
+      // \u = username (from $USER env var)
+      // \h = hostname (hardcoded to DevFusion below)
+      // \w = working directory (~ replaces HOME)
+      // $(__git_ps1 " (%s)") = git branch if inside a repo
+      const ps1 = [
+        "\\[\\e[1;32m\\]\\u@DevFusion\\[\\e[0m\\]", // green: user@DevFusion
+        "\\[\\e[1;35m\\]MINGW64\\[\\e[0m\\]", // magenta: MINGW64
+        "\\[\\e[1;33m\\]\\w\\[\\e[0m\\]", // yellow: working dir
+        '\\[\\e[1;36m\\]$(__git_ps1 " (%s)")\\[\\e[0m\\]', // cyan: git branch
+        "\\n\\$ ", // newline + $ or #
+      ].join(" ");
+
       const env = {
         ...process.env,
+        HOME: workspacePath,
         TERM: "xterm-256color",
         COLORTERM: "truecolor",
-        // Custom vars we can reference in the prompt
-        DEVFUSION_USER: this.username,
-        DEVFUSION_HOST: "DevFusion",
-        DEVFUSION_WORKSPACE: this.workspaceName,
+        PS1: ps1,
+        PROMPT_COMMAND: `export PS1='${ps1}'`,
+        USER: this.username, // ← makes \u show the logged-in username
+        LOGNAME: this.username, // ← backup var, some shells check this
+        MSYSTEM: "MINGW64",
       };
 
-      let spawnArgs = [];
-
-      if (isWin) {
-        // PowerShell: define a dynamic prompt function that uses Get-Location
-        // This makes the prompt update automatically after every command (including cd)
-        const psPrompt =
-          `function prompt { ` +
-          `$pwd = (Get-Location).Path; ` +
-          `$home = $env:HOME; ` +
-          `if ($home -and $pwd.StartsWith($home)) { ` +
-          `  $display = '~' + $pwd.Substring($home.Length).Replace('\\\\','/'); ` +
-          `} else { $display = $pwd.Replace('\\\\','/'); } ` +
-          `Write-Host -NoNewline -ForegroundColor Green "$env:DEVFUSION_USER@$env:DEVFUSION_HOST"; ` +
-          `Write-Host -NoNewline " "; ` +
-          `Write-Host -NoNewline -ForegroundColor Magenta "MINGW64"; ` +
-          `Write-Host -NoNewline " "; ` +
-          `Write-Host -NoNewline -ForegroundColor Yellow $display; ` +
-          `Write-Host -NoNewline " "; ` +
-          `Write-Host -NoNewline -ForegroundColor Cyan "(main)"; ` +
-          `Write-Host ""; ` +
-          `return "$ " ` +
-          `}`;
-
-        // Execute the prompt definition at shell startup
-        spawnArgs = ["-NoLogo", "-NoExit", "-Command", psPrompt];
-      } else {
-        // Bash: PS1 with \w so the working directory updates dynamically
-        env.PS1 = `\\[\\033[1;32m\\]\\u@DevFusion\\[\\033[0m\\] \\[\\033[1;35m\\]MINGW64\\[\\033[0m\\] \\[\\033[1;33m\\]\\w\\[\\033[0m\\] \\[\\033[1;36m\\](main)\\[\\033[0m\\]\\n\\$ `;
-        spawnArgs = ["-i"];
-      }
-
-      this.ptyProcess = pty.spawn(shell, spawnArgs, {
+      this.ptyProcess = pty.spawn(shell, shellArgs, {
         name: "xterm-256color",
         cols: this.cols,
         rows: this.rows,
@@ -87,7 +90,6 @@ class PTYSession {
 
       this.isAlive = true;
 
-      // Handle output data
       this.ptyProcess.onData((data) => {
         this.lastActivity = Date.now();
         if (this.outputCallback) {
@@ -95,7 +97,6 @@ class PTYSession {
         }
       });
 
-      // Handle session exit
       this.ptyProcess.onExit(({ exitCode, signal }) => {
         this.isAlive = false;
         console.log(
