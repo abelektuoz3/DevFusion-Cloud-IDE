@@ -50,7 +50,6 @@ class TerminalWebSocketServer {
         `[WebSocket] ✅ Client (userId: ${decoded.userId}) connected to session ${sessionId}`,
       );
 
-      // Send session info
       ws.send(
         JSON.stringify({
           type: "info",
@@ -59,7 +58,7 @@ class TerminalWebSocketServer {
         }),
       );
 
-      // Subscribe to workspace disk changes → forward as fs-change events
+      // Subscribe to disk changes → forward as fs-change events
       const unsubscribe = onChange(session.workspaceId, (change) => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: "fs-change", ...change }));

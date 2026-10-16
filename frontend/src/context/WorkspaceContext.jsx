@@ -35,13 +35,6 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
-  /**
-   * Load a workspace.
-   * @param {string} workspaceId
-   * @param {object} options
-   * @param {boolean} options.silent - If true, skips loading spinner and toasts.
-   *                                    Used for background refreshes (e.g., after fs-change).
-   */
   const loadWorkspace = async (workspaceId, options = {}) => {
     const { silent = false } = options;
     try {
@@ -62,11 +55,6 @@ export const WorkspaceProvider = ({ children }) => {
     }
   };
 
-  /**
-   * Silent refresh — pulls fresh folder tree + files from server without
-   * disrupting the UI. Used when the terminal (or another client) modifies
-   * the workspace on disk. Preserves open tabs and active tab.
-   */
   const refreshWorkspace = async (workspaceId) => {
     if (!workspaceId) return;
     try {
@@ -77,12 +65,9 @@ export const WorkspaceProvider = ({ children }) => {
       setFolderTree(folderTree);
       setFiles(files || []);
 
-      // If any open tab's file was deleted (no longer exists in files),
-      // close that tab to avoid stale references.
       const fileIds = new Set((files || []).map((f) => f._id));
       setOpenTabs((prevTabs) => {
         const survivingTabs = prevTabs.filter((tab) => fileIds.has(tab.id));
-        // If active tab was removed, switch to the last remaining tab
         if (activeTab && !fileIds.has(activeTab)) {
           setActiveTab(
             survivingTabs.length > 0 ?
@@ -94,7 +79,6 @@ export const WorkspaceProvider = ({ children }) => {
       });
     } catch (error) {
       console.error("Silent refresh error:", error);
-      // Intentionally no toast — this is a background operation
     }
   };
 
@@ -347,7 +331,7 @@ export const WorkspaceProvider = ({ children }) => {
     // Workspace operations
     loadWorkspaces,
     loadWorkspace,
-    refreshWorkspace, // ← NEW: silent refresh
+    refreshWorkspace,
     createWorkspace,
     updateWorkspace,
     deleteWorkspace,

@@ -17,7 +17,7 @@ router.post(
   async (req, res) => {
     try {
       const { workspaceId } = req.params;
-      const userId = req.user ? req.user._id.toString() : "anonymous";
+      const userId = req.user ? req.user._id : null;
       const username = req.user ? req.user.username || "user" : "user";
       const { cols = 120, rows = 30 } = req.body;
 
@@ -31,13 +31,11 @@ router.post(
       );
 
       await syncWorkspaceToDisk(workspaceId, workspacePath);
-
-      // Start watching disk for changes → sync back to MongoDB
       startWatching(workspaceId, workspacePath, userId);
 
       const session = terminalManager.createSession(
         workspaceId,
-        userId,
+        userId ? userId.toString() : "anonymous",
         workspacePath,
         cols,
         rows,
@@ -91,7 +89,6 @@ router.delete("/api/terminal/:sessionId", protect, async (req, res) => {
     const closed = terminalManager.closeSession(sessionId);
 
     if (closed && workspaceId) {
-      // Stop watching only if no more sessions remain for this workspace
       const remaining = terminalManager.getWorkspaceSessions(workspaceId);
       if (remaining.length === 0) {
         stopWatching(workspaceId);

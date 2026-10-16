@@ -123,7 +123,6 @@ export const TerminalPanel = ({ workspaceId }) => {
             } else if (msg.type === "error") {
               terminal.writeln(`\r\n\x1b[1;31mError: ${msg.message}\x1b[0m`);
             } else if (msg.type === "fs-change") {
-              // Notify any component listening for workspace file changes
               window.dispatchEvent(
                 new CustomEvent("workspace-fs-change", { detail: msg }),
               );

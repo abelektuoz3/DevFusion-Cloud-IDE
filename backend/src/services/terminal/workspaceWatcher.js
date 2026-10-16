@@ -1,8 +1,8 @@
 const chokidar = require("chokidar");
 const path = require("path");
 const fs = require("fs");
-const Folder = require("../../models/Folder");
-const File = require("../../models/File");
+const Folder = require("../../../models/Folder");
+const File = require("../../../models/File");
 
 const watchers = new Map(); // workspaceId -> watcher
 const changeCallbacks = new Map(); // workspaceId -> Set of callbacks
@@ -35,6 +35,20 @@ function notifyChange(workspaceId, change) {
 }
 
 /**
+ * Convert a disk-relative path (e.g. "project/src/utils")
+ * into a DB path (e.g. "/project/src/utils").
+ * Empty string means root.
+ */
+function toDbPath(relativePath) {
+  const cleaned = relativePath.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+  return cleaned ? `/${cleaned}` : "";
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
  * Starts watching a workspace folder for changes on disk.
  * When files/folders are created/deleted, syncs them to MongoDB.
  */
@@ -64,18 +78,22 @@ function startWatching(workspaceId, workspacePath, userId) {
       const relativePath = path
         .relative(workspacePath, filePath)
         .replace(/\\/g, "/");
+      const dbPath = toDbPath(relativePath);
       const name = path.basename(filePath);
-      const parentPath = path.dirname(relativePath);
-      const parentFolder = parentPath === "." ? null : parentPath;
+      const parentRelPath = path.dirname(relativePath).replace(/\\/g, "/");
+      const parentDbPath = parentRelPath === "." ? "" : toDbPath(parentRelPath);
 
-      const existing = await File.findOne({ workspaceId, path: relativePath });
+      const existing = await File.findOne({
+        workspace: workspaceId,
+        path: dbPath,
+      });
       if (existing) return;
 
       let parentFolderId = null;
-      if (parentFolder) {
+      if (parentDbPath) {
         const folder = await Folder.findOne({
-          workspaceId,
-          path: parentFolder,
+          workspace: workspaceId,
+          path: parentDbPath,
         });
         parentFolderId = folder ? folder._id : null;
       }
@@ -83,19 +101,18 @@ function startWatching(workspaceId, workspacePath, userId) {
       const content = fs.readFileSync(filePath, "utf8").slice(0, 100000);
 
       const newFile = await File.create({
-        workspaceId,
+        workspace: workspaceId,
         name,
-        path: relativePath,
+        path: dbPath,
         content,
-        folderId: parentFolderId,
-        ownerId: userId,
-        language: detectLanguage(name),
+        folder: parentFolderId,
+        owner: userId,
       });
 
-      console.log(`[Watcher] ✅ File synced to DB: ${relativePath}`);
+      console.log(`[Watcher] ✅ File synced to DB: ${dbPath}`);
       notifyChange(workspaceId, {
         type: "add-file",
-        path: relativePath,
+        path: dbPath,
         file: newFile,
       });
     } catch (err) {
@@ -112,13 +129,14 @@ function startWatching(workspaceId, workspacePath, userId) {
       const relativePath = path
         .relative(workspacePath, filePath)
         .replace(/\\/g, "/");
+      const dbPath = toDbPath(relativePath);
       const content = fs.readFileSync(filePath, "utf8").slice(0, 100000);
       await File.updateOne(
-        { workspaceId, path: relativePath },
-        { $set: { content } },
+        { workspace: workspaceId, path: dbPath },
+        { $set: { content, lastModified: new Date() } },
       );
-      console.log(`[Watcher] 📝 File updated in DB: ${relativePath}`);
-      notifyChange(workspaceId, { type: "update-file", path: relativePath });
+      console.log(`[Watcher] 📝 File updated in DB: ${dbPath}`);
+      notifyChange(workspaceId, { type: "update-file", path: dbPath });
     } catch (err) {
       console.error(
         `[Watcher] ❌ Error updating file ${filePath}:`,
@@ -133,9 +151,10 @@ function startWatching(workspaceId, workspacePath, userId) {
       const relativePath = path
         .relative(workspacePath, filePath)
         .replace(/\\/g, "/");
-      await File.deleteOne({ workspaceId, path: relativePath });
-      console.log(`[Watcher] 🗑️ File removed from DB: ${relativePath}`);
-      notifyChange(workspaceId, { type: "remove-file", path: relativePath });
+      const dbPath = toDbPath(relativePath);
+      await File.deleteOne({ workspace: workspaceId, path: dbPath });
+      console.log(`[Watcher] 🗑️ File removed from DB: ${dbPath}`);
+      notifyChange(workspaceId, { type: "remove-file", path: dbPath });
     } catch (err) {
       console.error(
         `[Watcher] ❌ Error removing file ${filePath}:`,
@@ -151,37 +170,38 @@ function startWatching(workspaceId, workspacePath, userId) {
       const relativePath = path
         .relative(workspacePath, dirPath)
         .replace(/\\/g, "/");
+      const dbPath = toDbPath(relativePath);
       const name = path.basename(dirPath);
-      const parentPath = path.dirname(relativePath);
-      const parentFolder = parentPath === "." ? null : parentPath;
+      const parentRelPath = path.dirname(relativePath).replace(/\\/g, "/");
+      const parentDbPath = parentRelPath === "." ? "" : toDbPath(parentRelPath);
 
       const existing = await Folder.findOne({
-        workspaceId,
-        path: relativePath,
+        workspace: workspaceId,
+        path: dbPath,
       });
       if (existing) return;
 
       let parentFolderId = null;
-      if (parentFolder) {
+      if (parentDbPath) {
         const parent = await Folder.findOne({
-          workspaceId,
-          path: parentFolder,
+          workspace: workspaceId,
+          path: parentDbPath,
         });
         parentFolderId = parent ? parent._id : null;
       }
 
       const newFolder = await Folder.create({
-        workspaceId,
+        workspace: workspaceId,
         name,
-        path: relativePath,
-        parentId: parentFolderId,
-        ownerId: userId,
+        path: dbPath,
+        parentFolder: parentFolderId,
+        owner: userId,
       });
 
-      console.log(`[Watcher] ✅ Folder synced to DB: ${relativePath}`);
+      console.log(`[Watcher] ✅ Folder synced to DB: ${dbPath}`);
       notifyChange(workspaceId, {
         type: "add-folder",
-        path: relativePath,
+        path: dbPath,
         folder: newFolder,
       });
     } catch (err) {
@@ -198,16 +218,20 @@ function startWatching(workspaceId, workspacePath, userId) {
       const relativePath = path
         .relative(workspacePath, dirPath)
         .replace(/\\/g, "/");
+      const dbPath = toDbPath(relativePath);
+
+      const pathRegex = new RegExp(`^${escapeRegex(dbPath)}(/|$)`);
       await Folder.deleteMany({
-        workspaceId,
-        path: { $regex: `^${relativePath}(/|$)` },
+        workspace: workspaceId,
+        path: pathRegex,
       });
       await File.deleteMany({
-        workspaceId,
-        path: { $regex: `^${relativePath}(/|$)` },
+        workspace: workspaceId,
+        path: pathRegex,
       });
-      console.log(`[Watcher] 🗑️ Folder removed from DB: ${relativePath}`);
-      notifyChange(workspaceId, { type: "remove-folder", path: relativePath });
+
+      console.log(`[Watcher] 🗑️ Folder removed from DB: ${dbPath}`);
+      notifyChange(workspaceId, { type: "remove-folder", path: dbPath });
     } catch (err) {
       console.error(
         `[Watcher] ❌ Error removing folder ${dirPath}:`,
@@ -231,32 +255,6 @@ function stopWatching(workspaceId) {
     watchers.delete(workspaceId);
     console.log(`[Watcher] Stopped watching workspace ${workspaceId}`);
   }
-}
-
-function detectLanguage(filename) {
-  const ext = path.extname(filename).toLowerCase();
-  const map = {
-    ".js": "javascript",
-    ".jsx": "javascript",
-    ".ts": "typescript",
-    ".tsx": "typescript",
-    ".py": "python",
-    ".java": "java",
-    ".c": "c",
-    ".cpp": "cpp",
-    ".cs": "csharp",
-    ".go": "go",
-    ".rs": "rust",
-    ".php": "php",
-    ".rb": "ruby",
-    ".html": "html",
-    ".css": "css",
-    ".json": "json",
-    ".md": "markdown",
-    ".sh": "shell",
-    ".txt": "plaintext",
-  };
-  return map[ext] || "plaintext";
 }
 
 module.exports = { startWatching, stopWatching, onChange };
